@@ -14,7 +14,12 @@ import {
   IconInfo,
 } from '../common/Icons';
 
-export function AdminView() {
+interface AdminViewProps {
+  clientName?: string;
+  onViewClient?: () => void;
+}
+
+export function AdminView({ clientName = 'Dr. Berlioz', onViewClient }: AdminViewProps = {}) {
   const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'comparison' | 'matrix' | 'scoring-config'>('overview');
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
@@ -22,10 +27,10 @@ export function AdminView() {
   const [clients, setClients] = useState<ClientItem[]>([
     {
       id: 'c1',
-      name: 'Despacho Di Rosa & Asociados',
+      name: clientName,
       sector: 'Extranjería y Movilidad Internacional',
-      contactName: 'Emiliano Di Rosa',
-      contactEmail: 'emilianodirosa1@gmail.com',
+      contactName: 'Dr. Berlioz',
+      contactEmail: 'contacto@drberlioz.com',
       status: 'COMPLETED',
       token: 'f8d3b2e1a9c40567',
       createdAt: '2026-09-10',
@@ -461,7 +466,7 @@ export function AdminView() {
               <div style={{ marginBottom: 'var(--space-6)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
                   <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 'var(--font-weight-bold)' }}>
-                    Comparativa de Servicios — Despacho Di Rosa & Asociados
+                    Comparativa de Servicios — {clientName}
                   </h1>
                   <Badge variant="brand" icon={<IconCheck size={12} />}>
                     Cuestionario completado

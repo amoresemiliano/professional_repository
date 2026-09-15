@@ -33,7 +33,7 @@ export const TARGET_AUDIENCE_OPTIONS = [
   { id: 'foreign_companies', label: 'Empresas o emprendedores extranjeros que quieren operar en España' },
   { id: 'freelancers', label: 'Autónomos' },
   { id: 'smes', label: 'PYMES' },
-  { id: 'spanish_legal', label: 'Españoles que necesitan asesoramiento jurídico' },
+  { id: 'spanish_legal', label: 'Particulares que necesitan asesoramiento profesional' },
 ];
 
 export const DIFFERENTIAL_OPTIONS = [
@@ -44,9 +44,9 @@ export const DIFFERENTIAL_OPTIONS = [
   { id: 'price', label: 'Precio' },
   { id: 'explain_complex', label: 'Capacidad para explicar procesos complejos' },
   { id: 'online_support', label: 'Atención online' },
-  { id: 'latam_experience', label: 'Experiencia con clientes latinoamericanos' },
   { id: 'business_knowledge', label: 'Conocimiento empresarial' },
   { id: 'languages', label: 'Idiomas' },
   { id: 'availability', label: 'Disponibilidad' },
   { id: 'continuous_guidance', label: 'Acompañamiento durante todo el proceso' },
+  { id: 'others', label: 'Otros' },
 ];

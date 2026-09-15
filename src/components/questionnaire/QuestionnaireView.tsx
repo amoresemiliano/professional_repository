@@ -30,7 +30,11 @@ import {
   IconInfo,
 } from '../common/Icons';
 
-export function QuestionnaireView() {
+interface QuestionnaireViewProps {
+  clientName?: string;
+}
+
+export function QuestionnaireView({ clientName: _clientName }: QuestionnaireViewProps = {}) {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 10;
 
@@ -45,82 +49,16 @@ export function QuestionnaireView() {
   const [customServiceName, setCustomServiceName] = useState('');
   const [showAddCustom, setShowAddCustom] = useState(false);
 
-  // Respuestas por servicio (Pasos 3 a 8)
-  const [answers, setAnswers] = useState<Record<string, ServiceAnswerItem>>({
-    '1': {
-      serviceId: '1',
-      clientProblem: 'Dificultad para obtener cita previa y tramitación de arraigo social.',
-      solutionActions: 'Auditoría documental, presentación telemática en Mercurio y subsanaciones.',
-      expectedResult: 'Concesión de autorización de residencia y trabajo legal.',
-      typicalDuration: '3 a 6 meses',
-      pricingModel: 'fixed',
-      priceMin: '750',
-      priceMax: '1200',
-      currency: 'EUR',
-      priceNotes: 'Incluye tasas y recursos de alzada si fuera necesario.',
-      marketPosition: 'similar',
-      profitabilityScore: 4,
-      profitabilityIsUncertain: false,
-      operationalEaseScore: 3,
-      operationalIssues: ['slow_admin', 'public_dependency'],
-      remoteCapability: 'online_mostly',
-      remoteChannels: ['videocall', 'whatsapp_email', 'digital_signature'],
-    },
-    '2': {
-      serviceId: '2',
-      clientProblem: 'Nómadas digitales y visados de inversores (Golden Visa).',
-      solutionActions: 'Preparación integral de expediente y asesoría fiscal previa.',
-      expectedResult: 'Resolución favorable en UGE-CE.',
-      typicalDuration: '1 a 2 meses',
-      pricingModel: 'range',
-      priceMin: '1200',
-      priceMax: '2500',
-      currency: 'EUR',
-      marketPosition: 'similar',
-      profitabilityScore: 5,
-      profitabilityIsUncertain: false,
-      operationalEaseScore: 4,
-      operationalIssues: ['docs'],
-      remoteCapability: 'online_100',
-      remoteChannels: ['videocall', 'whatsapp_email', 'digital_signature', 'online_docs'],
-    },
-    '3': {
-      serviceId: '3',
-      clientProblem: 'Solicitudes de nacionalidad por residencia atascadas.',
-      solutionActions: 'Revisión telemática de antecedentes y agilización de jura.',
-      expectedResult: 'DNI y pasaporte español.',
-      typicalDuration: '4 a 9 meses',
-      pricingModel: 'fixed',
-      priceMin: '500',
-      priceMax: '800',
-      currency: 'EUR',
-      marketPosition: 'below',
-      profitabilityScore: 4,
-      profitabilityIsUncertain: false,
-      operationalEaseScore: 4,
-      operationalIssues: ['slow_admin'],
-      remoteCapability: 'online_100',
-      remoteChannels: ['videocall', 'digital_signature', 'online_docs'],
-    },
-  });
+  // Respuestas por servicio (Pasos 3 a 8) — Inicialmente vacías para permitir el funcionamiento natural de los placeholders
+  const [answers, setAnswers] = useState<Record<string, ServiceAnswerItem>>({});
 
   // Paso 9: Públicos objetivo
-  const [audiences, setAudiences] = useState<TargetAudienceItem[]>([
-    { key: 'foreigners_living', label: 'Extranjeros que quieren vivir en España', priority: 'high' },
-    { key: 'moving_pros', label: 'Profesionales que se trasladan a España', priority: 'high' },
-    { key: 'foreign_companies', label: 'Empresas o emprendedores extranjeros que quieren operar en España', priority: 'medium' },
-  ]);
+  const [audiences, setAudiences] = useState<TargetAudienceItem[]>([]);
 
-  // Paso 10: Diferenciales y Pitch
-  const [differentials, setDifferentials] = useState<string[]>([
-    'specialization',
-    'speed',
-    'latam_experience',
-    'online_support',
-  ]);
-  const [finalPitch, setFinalPitch] = useState(
-    'Ofrecemos un trato directo y transparente sin intermediarios, con una plataforma 100% digital que evita desplazamientos innecesarios y acelera los trámites ante extranjería.'
-  );
+  // Paso 10: Diferenciales y Pitch (sin texto precargado en values)
+  const [differentials, setDifferentials] = useState<string[]>([]);
+  const [customDifferentialText, setCustomDifferentialText] = useState('');
+  const [finalPitch, setFinalPitch] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -201,9 +139,9 @@ export function QuestionnaireView() {
               {currentStep <= totalSteps ? `Paso ${currentStep} de ${totalSteps}` : 'Revisión final'}
             </span>
             <span className="progress-step-title">
-              {currentStep === 1 && 'Servicios ofrecidos'}
-              {currentStep === 2 && 'Servicios prioritarios'}
-              {currentStep === 3 && 'Descripción de servicios'}
+              {currentStep === 1 && 'Oferta'}
+              {currentStep === 2 && 'Prioritarios'}
+              {currentStep === 3 && 'Descripción'}
               {currentStep === 4 && 'Precios y modalidad'}
               {currentStep === 5 && 'Posición frente al mercado'}
               {currentStep === 6 && 'Rentabilidad percibida'}
@@ -223,15 +161,14 @@ export function QuestionnaireView() {
         </section>
 
         {/* =========================================================================
-            PASO 1: SERVICIOS
+            PASO 1: SERVICIOS (OFERTA)
             ========================================================================= */}
         {currentStep === 1 && (
           <div>
             <header className="step-header">
-              <h1 className="step-title">¿Cuáles son tus principales servicios jurídicos?</h1>
+              <h1 className="step-title">¿Cuáles son tus principales servicios?</h1>
               <p className="step-description">
-                Seleccioná todos los servicios que ofrecés actualmente en tu despacho.
-                Podés añadir otros servicios personalizados con el botón inferior.
+                Selecciona todos los servicios que ofreces actualmente. Puedes añadir personalizados con el botón inferior.
               </p>
             </header>
 
@@ -279,10 +216,9 @@ export function QuestionnaireView() {
             {!showAddCustom ? (
               <Button
                 variant="secondary"
-                iconLeft={<IconPlus size={16} />}
                 onClick={() => setShowAddCustom(true)}
               >
-                Añadir otro servicio
+                + Añadir
               </Button>
             ) : (
               <Card>
@@ -291,7 +227,7 @@ export function QuestionnaireView() {
                   <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
                     <Input
                       id="custom-service-input"
-                      placeholder="Ej: Derecho Inmobiliario y Arrendamientos"
+                      placeholder="Ej: Consultoría, Asesoría integral..."
                       value={customServiceName}
                       onChange={(e) => setCustomServiceName(e.target.value)}
                       onKeyDown={(e) => {
@@ -315,15 +251,14 @@ export function QuestionnaireView() {
         )}
 
         {/* =========================================================================
-            PASO 2: PRIORIDADES
+            PASO 2: PRIORIDADES (PRIORITARIOS)
             ========================================================================= */}
         {currentStep === 2 && (
           <div>
             <header className="step-header">
-              <h1 className="step-title">¿Cuáles considerás tus 3 a 5 servicios principales?</h1>
+              <h1 className="step-title">¿Cuáles consideras tus servicios principales?</h1>
               <p className="step-description">
-                Indicá cuáles te interesa especialmente desarrollar o para cuáles querés captar
-                más clientes. Marcá entre 3 y 5 de tu lista seleccionada.
+                Indica entre 3 y 5 servicios que te interesan especialmente desarrollar o para los cuales quieres captar más clientes.
               </p>
             </header>
 
@@ -370,15 +305,15 @@ export function QuestionnaireView() {
         )}
 
         {/* =========================================================================
-            PASO 3: DESCRIPCIÓN DE SERVICIOS PRIORITARIOS
+            PASO 3: DESCRIPCIÓN DE SERVICIOS PRIORITARIOS (DESCRIPCIÓN)
             ========================================================================= */}
         {currentStep === 3 && (
           <div>
             <header className="step-header">
               <h1 className="step-title">Descripción de tus servicios prioritarios</h1>
               <p className="step-description">
-                Comprender el problema y la solución de cada servicio nos permite diseñar mensajes
-                de marketing claros y orientados a resultados.
+                Comprender el problema y la solución de cada servicio permite estructurar una
+                propuesta clara y orientada a resultados.
               </p>
             </header>
 
@@ -399,7 +334,7 @@ export function QuestionnaireView() {
                     <CardBody>
                       <FormGroup>
                         <FormLabel htmlFor={`prob-${service.id}`}>
-                          1. ¿Qué problema tiene normalmente el cliente cuando te contacta?
+                          1. ¿Cuál es el problema frecuente del cliente cuando te contacta?
                         </FormLabel>
                         <Textarea
                           id={`prob-${service.id}`}
@@ -411,41 +346,39 @@ export function QuestionnaireView() {
 
                       <FormGroup>
                         <FormLabel htmlFor={`sol-${service.id}`}>
-                          2. ¿Qué hacés exactamente para resolverlo?
+                          2. ¿Cómo lo resuelves?
                         </FormLabel>
                         <Textarea
                           id={`sol-${service.id}`}
-                          placeholder="Estrategia legal, gestiones administrativas o trámites que llevas a cabo..."
+                          placeholder="Estrategia, gestiones o metodología que llevas a cabo..."
                           value={ans.solutionActions || ''}
                           onChange={(e) => updateServiceAnswer(service.id, { solutionActions: e.target.value })}
                         />
                       </FormGroup>
 
-                      <div className="grid-2">
-                        <FormGroup>
-                          <FormLabel htmlFor={`res-${service.id}`}>
-                            3. ¿Qué resultado concreto espera obtener?
-                          </FormLabel>
-                          <Input
-                            id={`res-${service.id}`}
-                            placeholder="Ej: Concesión de residencia, empresa constituida..."
-                            value={ans.expectedResult || ''}
-                            onChange={(e) => updateServiceAnswer(service.id, { expectedResult: e.target.value })}
-                          />
-                        </FormGroup>
+                      <FormGroup>
+                        <FormLabel htmlFor={`res-${service.id}`}>
+                          3. ¿Qué resultado concreto esperas obtener?
+                        </FormLabel>
+                        <Input
+                          id={`res-${service.id}`}
+                          placeholder="Ej: Concesión de trámite, resolución favorable, objetivo alcanzado..."
+                          value={ans.expectedResult || ''}
+                          onChange={(e) => updateServiceAnswer(service.id, { expectedResult: e.target.value })}
+                        />
+                      </FormGroup>
 
-                        <FormGroup>
-                          <FormLabel htmlFor={`dur-${service.id}`}>
-                            4. ¿Cuánto suele durar aproximadamente el proceso?
-                          </FormLabel>
-                          <Input
-                            id={`dur-${service.id}`}
-                            placeholder="Ej: 2 a 4 semanas, 3 a 6 meses..."
-                            value={ans.typicalDuration || ''}
-                            onChange={(e) => updateServiceAnswer(service.id, { typicalDuration: e.target.value })}
-                          />
-                        </FormGroup>
-                      </div>
+                      <FormGroup style={{ marginBottom: 0 }}>
+                        <FormLabel htmlFor={`dur-${service.id}`}>
+                          4. ¿Cuánto suele durar el proceso?
+                        </FormLabel>
+                        <Input
+                          id={`dur-${service.id}`}
+                          placeholder="Ej: 2 a 4 semanas, 3 a 6 meses..."
+                          value={ans.typicalDuration || ''}
+                          onChange={(e) => updateServiceAnswer(service.id, { typicalDuration: e.target.value })}
+                        />
+                      </FormGroup>
                     </CardBody>
                   </Card>
                 );
@@ -507,7 +440,7 @@ export function QuestionnaireView() {
                             <Input
                               id={`price-min-${service.id}`}
                               type="number"
-                              placeholder="750"
+                              placeholder="Ej: 750"
                               value={ans.priceMin || ''}
                               onChange={(e) => updateServiceAnswer(service.id, { priceMin: e.target.value })}
                             />
@@ -520,7 +453,7 @@ export function QuestionnaireView() {
                             <Input
                               id={`price-max-${service.id}`}
                               type="number"
-                              placeholder="1200"
+                              placeholder="Ej: 1200"
                               value={ans.priceMax || ''}
                               onChange={(e) => updateServiceAnswer(service.id, { priceMax: e.target.value })}
                             />
@@ -933,13 +866,13 @@ export function QuestionnaireView() {
             <header className="step-header">
               <h1 className="step-title">Diferenciales y propuesta de valor</h1>
               <p className="step-description">
-                ¿Qué te diferencia de otros despachos o abogados de tu especialidad?
+                ¿Qué te diferencia de otros profesionales o firmas de tu especialidad?
                 Esta base estructurada fundamentará los argumentos de venta en tu web y campañas.
               </p>
             </header>
 
             <FormGroup>
-              <FormLabel>Factores diferenciales clave (elegí los más representativos)</FormLabel>
+              <FormLabel>Factores diferenciales clave (elige los más representativos)</FormLabel>
               <div className="grid-2">
                 {DIFFERENTIAL_OPTIONS.map((diff) => {
                   const isSelected = differentials.includes(diff.id);
@@ -960,10 +893,25 @@ export function QuestionnaireView() {
               </div>
             </FormGroup>
 
+            {/* Campo dinámico cuando se selecciona 'Otros' */}
+            {differentials.includes('others') && (
+              <FormGroup style={{ marginTop: 'var(--space-4)' }}>
+                <FormLabel htmlFor="custom-diff-text">
+                  Desarrolla tu factor diferencial
+                </FormLabel>
+                <Input
+                  id="custom-diff-text"
+                  placeholder="Describe qué otro factor diferencial o metodología propia ofreces..."
+                  value={customDifferentialText}
+                  onChange={(e) => setCustomDifferentialText(e.target.value)}
+                />
+              </FormGroup>
+            )}
+
             <FormGroup style={{ marginTop: 'var(--space-6)' }}>
               <FormLabel htmlFor="final-pitch">
                 Si tuvieras que explicarle en pocas palabras a un potencial cliente por qué debería
-                trabajar contigo y no con otro abogado, ¿qué le dirías?
+                trabajar contigo y no con otro profesional, ¿qué le dirías?
               </FormLabel>
               <Textarea
                 id="final-pitch"
@@ -1078,6 +1026,11 @@ export function QuestionnaireView() {
                           </Badge>
                         </div>
                       ))}
+                      {audiences.length === 0 && (
+                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
+                          No se han seleccionado públicos objetivos todavía.
+                        </span>
+                      )}
                     </div>
                   </CardBody>
                 </Card>
@@ -1093,14 +1046,32 @@ export function QuestionnaireView() {
                     </Button>
                   </CardHeader>
                   <CardBody>
-                    <p style={{ fontStyle: 'italic', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)' }}>
-                      &quot;{finalPitch}&quot;
-                    </p>
+                    {finalPitch ? (
+                      <p style={{ fontStyle: 'italic', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)' }}>
+                        &quot;{finalPitch}&quot;
+                      </p>
+                    ) : (
+                      <p style={{ fontStyle: 'italic', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-3)', fontSize: 'var(--font-size-sm)' }}>
+                        No se ha introducido argumento diferenciador.
+                      </p>
+                    )}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
                       {differentials.map((d) => {
+                        if (d === 'others') {
+                          return (
+                            <Badge key={d} variant="brand">
+                              {customDifferentialText.trim() ? `Otros: ${customDifferentialText.trim()}` : 'Otros'}
+                            </Badge>
+                          );
+                        }
                         const opt = DIFFERENTIAL_OPTIONS.find((o) => o.id === d);
                         return <Badge key={d} variant="brand">{opt ? opt.label : d}</Badge>;
                       })}
+                      {differentials.length === 0 && (
+                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
+                          No se han seleccionado diferenciales.
+                        </span>
+                      )}
                     </div>
                   </CardBody>
                 </Card>

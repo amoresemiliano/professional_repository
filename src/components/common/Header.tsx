@@ -17,65 +17,67 @@ export function Header({
     <header className="vegen-header">
       <div className="container container-wide">
         <div className="vegen-header-inner">
-          {/* Identidad Oficial Vegen Digital con contenedor de contraste seguro */}
+          {/* Identidad Oficial Vegen Digital directa sobre el header */}
           <div className="brand-mark-wrapper">
-            <div className="brand-logo-container" title="Vegen Digital">
-              <img
-                src="/assets/logo_vegen_negativo.png"
-                alt="Vegen Digital"
-                className="brand-logo-img"
-              />
-            </div>
+            <img
+              src="/assets/logo_vegen_negativo.png"
+              alt="Vegen Digital"
+              className="brand-logo-img"
+            />
             <span className="brand-app-label">
-              {mode === 'admin' ? 'Panel de Administración' : 'Diagnóstico Inicial'}
+              {mode === 'admin' ? 'Panel de Administración' : 'DIAGNÓSTICO'}
             </span>
           </div>
 
           {/* Área de Acciones y Estado */}
           <div className="header-actions">
             {mode === 'client' && (
-              <div className="autosave-status" aria-live="polite">
-                <span
-                  className={`autosave-dot ${autosaveStatus === 'saving' ? 'saving' : ''}`}
-                />
-                <span>
-                  {autosaveStatus === 'saving'
-                    ? 'Guardando...'
-                    : clientName
-                    ? `${clientName} • Guardado`
-                    : 'Guardado'}
-                </span>
-              </div>
+              <>
+                <div className="autosave-status" aria-live="polite">
+                  <span
+                    className={`autosave-dot ${autosaveStatus === 'saving' ? 'saving' : ''}`}
+                  />
+                  <span>
+                    {autosaveStatus === 'saving'
+                      ? 'Guardando...'
+                      : clientName
+                      ? `${clientName} • Guardado`
+                      : 'Guardado'}
+                  </span>
+                </div>
+
+                {onToggleMode && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost"
+                    style={{
+                      fontSize: 'var(--font-size-xs)',
+                      color: 'var(--color-text-tertiary)',
+                      minHeight: '28px',
+                      padding: '0.2rem 0.6rem',
+                    }}
+                    onClick={() => onToggleMode('admin')}
+                    title="Acceso de gestión interna"
+                  >
+                    Admin
+                  </button>
+                )}
+              </>
             )}
 
-            {/* Selector de Vista para evaluación F1 */}
-            {onToggleMode && (
-              <div
+            {mode === 'admin' && onToggleMode && (
+              <button
+                type="button"
+                className="btn btn-sm btn-secondary"
                 style={{
-                  display: 'inline-flex',
-                  backgroundColor: 'var(--color-surface-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '3px',
-                  border: '1px solid var(--color-border)',
+                  fontSize: 'var(--font-size-xs)',
+                  minHeight: '30px',
+                  padding: '0.25rem 0.75rem',
                 }}
+                onClick={() => onToggleMode('client')}
               >
-                <button
-                  type="button"
-                  className={`btn btn-sm ${mode === 'client' ? 'btn-primary' : 'btn-ghost'}`}
-                  style={{ minHeight: '28px', padding: '0.2rem 0.6rem' }}
-                  onClick={() => onToggleMode('client')}
-                >
-                  Vista Cliente
-                </button>
-                <button
-                  type="button"
-                  className={`btn btn-sm ${mode === 'admin' ? 'btn-primary' : 'btn-ghost'}`}
-                  style={{ minHeight: '28px', padding: '0.2rem 0.6rem' }}
-                  onClick={() => onToggleMode('admin')}
-                >
-                  Vista Admin
-                </button>
-              </div>
+                Ver vista cliente
+              </button>
             )}
           </div>
         </div>

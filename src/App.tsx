@@ -6,22 +6,31 @@ import { AdminView } from './components/admin/AdminView';
 export default function App() {
   const [currentMode, setCurrentMode] = useState<'client' | 'admin'>('client');
 
+  // Configuración de cliente configurable (Dr. Berlioz para mock F1.1, desacoplado de la UI)
+  const [client] = useState({
+    id: 'c1',
+    name: 'Dr. Berlioz',
+  });
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {/* Header Institucional Vegen Digital */}
       <Header
         mode={currentMode}
         onToggleMode={setCurrentMode}
-        clientName="Despacho Di Rosa"
+        clientName={client.name}
         autosaveStatus="saved"
       />
 
       {/* Experiencia según el rol seleccionado */}
       <div style={{ flex: '1 0 auto' }}>
         {currentMode === 'client' ? (
-          <QuestionnaireView />
+          <QuestionnaireView clientName={client.name} />
         ) : (
-          <AdminView />
+          <AdminView
+            clientName={client.name}
+            onViewClient={() => setCurrentMode('client')}
+          />
         )}
       </div>
 
@@ -30,10 +39,10 @@ export default function App() {
         <div className="container container-wide">
           <div className="app-footer-inner">
             <span>
-              Vegen Digital © {new Date().getFullYear()} • Plataforma de Diagnóstico Comercial y Marketing
+              Vegen Digital © {new Date().getFullYear()} • Plataforma de Diagnóstico
             </span>
             <span>
-              Privacidad y Confidencialidad Profesional Garantizadas
+              Privacidad y Confidencialidad Profesional según la LOPDGDD y RGPD
             </span>
           </div>
         </div>

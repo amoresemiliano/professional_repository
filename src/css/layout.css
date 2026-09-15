@@ -51,7 +51,7 @@
   gap: var(--space-4);
 }
 
-/* Superficie de contraste para el logo original */
+/* Identidad de marca directa sobre el header (sin recuadro) */
 .brand-mark-wrapper {
   display: inline-flex;
   align-items: center;
@@ -59,21 +59,16 @@
   text-decoration: none;
 }
 
+.brand-logo-img {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
 .brand-logo-container {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  height: 38px;
-  padding: 2px 10px;
-  background-color: #FFFFFF;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-}
-
-.brand-logo-img {
-  height: 30px;
-  width: auto;
-  object-fit: contain;
 }
 
 .brand-app-label {
