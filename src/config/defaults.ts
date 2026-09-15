@@ -1,3 +1,5 @@
+import { ServiceItem, TargetAudienceItem } from '../types';
+
 export const DEFAULT_SERVICES = [
   'Extranjería',
   'Visados / residencia',
@@ -7,6 +9,34 @@ export const DEFAULT_SERVICES = [
   'Derecho laboral',
   'Derecho civil',
   'Contratos',
+];
+
+export const INITIAL_SERVICES: ServiceItem[] = [
+  {
+    id: 's1',
+    name: 'Visados y Autorizaciones de Residencia',
+    isPriority: true,
+  },
+  {
+    id: 's2',
+    name: 'Nacionalidad Española por Residencia',
+    isPriority: true,
+  },
+  {
+    id: 's3',
+    name: 'Arraigo y Regularización Extraordinaria',
+    isPriority: true,
+  },
+  {
+    id: 's4',
+    name: 'Recursos Contencioso-Administrativos',
+    isPriority: false,
+  },
+  {
+    id: 's5',
+    name: 'Constitución de Sociedades para Extranjeros',
+    isPriority: false,
+  },
 ];
 
 export const OPERATIONAL_ISSUES_OPTIONS = [
@@ -36,6 +66,12 @@ export const TARGET_AUDIENCE_OPTIONS = [
   { id: 'spanish_legal', label: 'Particulares que necesitan asesoramiento profesional' },
 ];
 
+export const INITIAL_TARGET_AUDIENCES: TargetAudienceItem[] = [
+  { key: 'foreigners_living', label: 'Extranjeros que quieren vivir en España', priority: 'high' },
+  { key: 'moving_pros', label: 'Profesionales que se trasladan a España', priority: 'high' },
+  { key: 'foreign_companies', label: 'Empresas o emprendedores extranjeros que quieren operar en España', priority: 'medium' },
+];
+
 export const DIFFERENTIAL_OPTIONS = [
   { id: 'specialization', label: 'Especialización' },
   { id: 'experience', label: 'Experiencia' },
@@ -49,4 +85,12 @@ export const DIFFERENTIAL_OPTIONS = [
   { id: 'availability', label: 'Disponibilidad' },
   { id: 'continuous_guidance', label: 'Acompañamiento durante todo el proceso' },
   { id: 'others', label: 'Otros' },
+];
+
+export const DEFAULT_DIFFERENTIAL_OPTIONS = [
+  'specialization',
+  'speed',
+  'close_contact',
+  'online_support',
+  'continuous_guidance',
 ];

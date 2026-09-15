@@ -47,23 +47,44 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 64px;
-  gap: var(--space-4);
+  min-height: 56px;
+  gap: var(--space-2);
+}
+
+@media (min-width: 640px) {
+  .vegen-header-inner {
+    min-height: 64px;
+    gap: var(--space-4);
+  }
 }
 
 /* Identidad de marca directa sobre el header (sin recuadro) */
 .brand-mark-wrapper {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   text-decoration: none;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .brand-mark-wrapper {
+    gap: var(--space-3);
+  }
 }
 
 .brand-logo-img {
-  height: 38px;
+  height: 32px;
   width: auto;
   object-fit: contain;
   display: block;
+}
+
+@media (min-width: 480px) {
+  .brand-logo-img {
+    height: 38px;
+  }
 }
 
 .brand-logo-container {
@@ -72,20 +93,34 @@
 }
 
 .brand-app-label {
-  font-size: var(--font-size-xs);
+  font-size: 11px;
   font-weight: var(--font-weight-semibold);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--color-text-secondary);
   padding-left: var(--space-2);
   border-left: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .brand-app-label {
+    font-size: var(--font-size-xs);
+  }
 }
 
 /* Header Status Area */
 .header-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .header-actions {
+    gap: var(--space-3);
+  }
 }
 
 .autosave-status {
@@ -95,6 +130,7 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
   font-weight: var(--font-weight-medium);
+  white-space: nowrap;
 }
 
 .autosave-dot {
@@ -246,5 +282,41 @@
 @media (min-width: 640px) {
   .app-footer-inner {
     flex-direction: row;
+  }
+}
+
+/* Agrupación adaptativa para rangos de precio (Mobile: columna, Desktop: fila) */
+.price-range-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (min-width: 500px) {
+  .price-range-group {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .price-range-group > * {
+    flex: 1;
+    margin-bottom: 0;
+  }
+}
+
+/* Utilidades de visibilidad responsive controladas */
+.mobile-only {
+  display: block;
+}
+
+.desktop-only {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none !important;
+  }
+  .desktop-only {
+    display: block !important;
   }
 }

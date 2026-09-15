@@ -105,4 +105,13 @@
   --max-width-form: 780px;
   --max-width-content: 960px;
   --max-width-wide: 1200px;
+
+  /* Estrategia Centralizada de Breakpoints */
+  --breakpoint-mobile-max: 639px;
+  --breakpoint-tablet-min: 640px;
+  --breakpoint-tablet-max: 1023px;
+  --breakpoint-desktop-min: 1024px;
+
+  /* Accesibilidad Táctil y Mobile */
+  --touch-target-min: 44px;
 }

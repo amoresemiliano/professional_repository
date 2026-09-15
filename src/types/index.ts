@@ -12,7 +12,7 @@ export type MarketPosition = 'below' | 'similar' | 'above' | 'unknown';
 export type RemoteCapability = 'online_100' | 'online_mostly' | 'hybrid' | 'mainly_in_person';
 
 export interface ServiceAnswerItem {
-  serviceId: string;
+  serviceId?: string;
   // Paso 3: Descripción cualitativa
   clientProblem?: string;
   solutionActions?: string;
