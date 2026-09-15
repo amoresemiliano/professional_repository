@@ -24,7 +24,7 @@ export function Step5Mercado({
         </p>
       </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      <div className="service-card-stack">
         {priorityServices.map((service) => {
           const ans: Partial<ServiceAnswerItem> = answers[service.id] || {};
           const currentPos = ans.marketPosition || 'unknown';

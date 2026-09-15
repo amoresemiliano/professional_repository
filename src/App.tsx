@@ -69,7 +69,7 @@ export default function App() {
           <div className="container container-wide">
             <div className="app-footer-inner">
               <span>
-                Vegen Digital © {new Date().getFullYear()} • Plataforma de Diagnóstico
+                Vegen Digital © 2026 • Plataforma de Diagnóstico
               </span>
               <span>
                 Privacidad y Confidencialidad Profesional según la LOPDGDD y RGPD

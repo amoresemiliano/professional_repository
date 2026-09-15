@@ -140,7 +140,6 @@ export function AdminLoginView({ onLoginSuccess, onBackToDiagnosis }: AdminLogin
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
                   required
                 />
               </FormGroup>

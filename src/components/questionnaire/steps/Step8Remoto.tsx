@@ -2,7 +2,7 @@ import { ServiceItem, ServiceAnswerItem, RemoteCapability } from '../../../types
 import { REMOTE_CHANNELS_OPTIONS } from '../../../config/defaults';
 import { Card, CardHeader, CardBody } from '../../common/Card';
 import { ChoiceCard } from '../../common/ChoiceCard';
-import { FormLabel } from '../../common/FormControls';
+import { FormGroup, FormLabel, Input } from '../../common/FormControls';
 
 interface Step8RemotoProps {
   priorityServices: ServiceItem[];
@@ -25,7 +25,7 @@ export function Step8Remoto({
         </p>
       </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      <div className="service-card-stack">
         {priorityServices.map((service) => {
           const ans: Partial<ServiceAnswerItem> = answers[service.id] || {};
           const channels = ans.remoteChannels || [];
@@ -81,6 +81,18 @@ export function Step8Remoto({
                     );
                   })}
                 </div>
+
+                <FormGroup style={{ marginBottom: 0 }}>
+                  <FormLabel htmlFor={`remote-notes-${service.id}`} optional>
+                    Comentarios sobre la operativa telemática o presencial
+                  </FormLabel>
+                  <Input
+                    id={`remote-notes-${service.id}`}
+                    placeholder="Ej: Solo requerimos presencia física para la toma de huellas o firma final..."
+                    value={ans.remoteNotes || ''}
+                    onChange={(e) => onUpdateAnswer(service.id, { remoteNotes: e.target.value })}
+                  />
+                </FormGroup>
               </CardBody>
             </Card>
           );

@@ -6,7 +6,31 @@
  */
 
 import { ServiceItem, ServiceAnswerItem, TargetAudienceItem } from '../types';
-import { INITIAL_SERVICES, INITIAL_TARGET_AUDIENCES, DEFAULT_DIFFERENTIAL_OPTIONS } from '../config/defaults';
+import { INITIAL_SERVICES } from '../config/defaults';
+
+export interface QuestionnaireState {
+  services: ServiceItem[];
+  answers: Record<string, ServiceAnswerItem>;
+  audiences: TargetAudienceItem[];
+  differentials: string[];
+  customDifferentialText: string;
+  finalPitch: string;
+}
+
+/**
+ * Factory que genera el estado verdaderamente limpio para un nuevo cuestionario.
+ * Sin respuestas mock hardcodeadas, sin descripciones prefabricadas, sin notas prellenadas.
+ */
+export function getInitialQuestionnaireState(): QuestionnaireState {
+  return {
+    services: INITIAL_SERVICES.map((s) => ({ ...s })),
+    answers: {},
+    audiences: [],
+    differentials: [],
+    customDifferentialText: '',
+    finalPitch: '',
+  };
+}
 
 export interface QuestionnaireData {
   services: ServiceItem[];
@@ -21,15 +45,16 @@ export interface QuestionnaireData {
 
 class QuestionnaireService {
   /**
-   * Obtiene la configuración y datos iniciales para un nuevo cuestionario
+   * Obtiene la configuración y datos iniciales para un nuevo cuestionario limpio
    */
   public async getInitialData(): Promise<QuestionnaireData> {
+    const initial = getInitialQuestionnaireState();
     return {
-      services: [...INITIAL_SERVICES],
+      services: initial.services,
       answers: {},
-      targetAudiences: [...INITIAL_TARGET_AUDIENCES],
+      targetAudiences: [],
       customAudiences: [],
-      differentials: [...DEFAULT_DIFFERENTIAL_OPTIONS],
+      differentials: [],
       customDifferentialText: '',
       valueProposition: '',
       isCompleted: false,

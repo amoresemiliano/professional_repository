@@ -4,13 +4,8 @@ import {
   ServiceAnswerItem,
   TargetAudienceItem,
 } from '../../types';
-import {
-  INITIAL_SERVICES,
-  INITIAL_TARGET_AUDIENCES,
-  DEFAULT_DIFFERENTIAL_OPTIONS,
-} from '../../config/defaults';
 import { QUESTIONNAIRE_STEPS, TOTAL_STEPS } from '../../config/stepsConfig';
-import { questionnaireService } from '../../services/questionnaireService';
+import { questionnaireService, getInitialQuestionnaireState } from '../../services/questionnaireService';
 import { ProgressBar } from './ProgressBar';
 import { NavigationControls } from './NavigationControls';
 
@@ -39,65 +34,14 @@ export function QuestionnaireView({
   const [currentStep, setCurrentStep] = useState(1);
   const [, startTransition] = useTransition();
 
-  // Estados del cuestionario
-  const [services, setServices] = useState<ServiceItem[]>(INITIAL_SERVICES);
-  const [answers, setAnswers] = useState<Record<string, ServiceAnswerItem>>({
-    s1: {
-      serviceId: 's1',
-      clientProblem: 'Extranjeros que desean regularizar su residencia en España o invertir en el país y requieren asesoramiento legal integral.',
-      solutionActions: 'Elaboración del expediente, solicitud de NIE, gestión de visados ante la UGE o consulados y seguimiento continuo.',
-      expectedResult: 'Concesión de la autorización de residencia o visado de nómada digital / inversor.',
-      typicalDuration: '3 a 6 semanas',
-      pricingModel: 'range',
-      priceMin: '1200',
-      priceMax: '1800',
-      priceNotes: '50% a la firma del encargo y 50% tras la resolución favorable',
-      marketPosition: 'above',
-      profitabilityScore: 5,
-      operationalEaseScore: 4,
-      operationalIssues: ['citas_consulares', 'demoras_administracion'],
-      remoteCapability: 'online_100',
-      remoteChannels: ['videollamada', 'whatsapp', 'email', 'firma_electronica'],
-    },
-    s2: {
-      serviceId: 's2',
-      clientProblem: 'Residentes legales en España que cumplen el plazo para solicitar la nacionalidad por residencia.',
-      solutionActions: 'Preparación de documentación, exámenes DELE y CCSE, presentación telemática por plataforma colegial y recursos.',
-      expectedResult: 'Resolución favorable de concesión de nacionalidad española.',
-      typicalDuration: '4 a 12 meses',
-      pricingModel: 'fixed',
-      priceMin: '750',
-      priceMax: '950',
-      marketPosition: 'similar',
-      profitabilityScore: 4,
-      operationalEaseScore: 4,
-      remoteCapability: 'online_mostly',
-      remoteChannels: ['email', 'firma_electronica', 'plataforma_archivos'],
-    },
-    s3: {
-      serviceId: 's3',
-      clientProblem: 'Personas extranjeras en situación administrativa irregular que cumplen requisitos de permanencia y arraigo.',
-      solutionActions: 'Revisión exhaustiva de documentación laboral, social o formativa, informes de inserción y presentación ante Extranjería.',
-      expectedResult: 'Autorización inicial de residencia por circunstancias excepcionales.',
-      typicalDuration: '2 a 5 meses',
-      pricingModel: 'range',
-      priceMin: '850',
-      priceMax: '1100',
-      marketPosition: 'similar',
-      profitabilityScore: 3,
-      operationalEaseScore: 3,
-      operationalIssues: ['documentacion_incompleta', 'demoras_administracion'],
-      remoteCapability: 'online_mostly',
-      remoteChannels: ['whatsapp', 'email'],
-    },
-  });
-
-  const [audiences, setAudiences] = useState<TargetAudienceItem[]>(INITIAL_TARGET_AUDIENCES);
-  const [differentials, setDifferentials] = useState<string[]>(DEFAULT_DIFFERENTIAL_OPTIONS);
-  const [customDifferentialText, setCustomDifferentialText] = useState('');
-  const [finalPitch, setFinalPitch] = useState(
-    'Acompañamos personalmente cada expediente con comunicación transparente y gestión 100% telemática en toda España.'
-  );
+  // Estados del cuestionario inicializados limpios mediante factory (sin respuestas mock ni valores prefabricados)
+  const [initialState] = useState(() => getInitialQuestionnaireState());
+  const [services, setServices] = useState<ServiceItem[]>(initialState.services);
+  const [answers, setAnswers] = useState<Record<string, ServiceAnswerItem>>(initialState.answers);
+  const [audiences, setAudiences] = useState<TargetAudienceItem[]>(initialState.audiences);
+  const [differentials, setDifferentials] = useState<string[]>(initialState.differentials);
+  const [customDifferentialText, setCustomDifferentialText] = useState(initialState.customDifferentialText);
+  const [finalPitch, setFinalPitch] = useState(initialState.finalPitch);
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

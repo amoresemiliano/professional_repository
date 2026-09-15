@@ -32,8 +32,8 @@ export function NewClientModal({
     onCreateClient({
       name: name.trim(),
       sector,
-      contactName: contactName.trim() || 'Contacto principal',
-      contactEmail: contactEmail.trim() || 'contacto@despacho.com',
+      contactName: contactName.trim(),
+      contactEmail: contactEmail.trim(),
     });
 
     setName('');

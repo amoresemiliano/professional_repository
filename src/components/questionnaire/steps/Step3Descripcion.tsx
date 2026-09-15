@@ -25,15 +25,15 @@ export function Step3Descripcion({
         </p>
       </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      <div className="service-card-stack">
         {priorityServices.map((service) => {
           const ans: Partial<ServiceAnswerItem> = answers[service.id] || {};
           return (
             <Card key={service.id}>
               <CardHeader>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                  <IconStar size={16} filled style={{ color: 'var(--color-warning)' }} />
-                  <h2 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minWidth: 0 }}>
+                  <IconStar size={16} filled style={{ color: 'var(--color-warning)', flexShrink: 0 }} />
+                  <h2 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', wordBreak: 'break-word' }}>
                     {service.name}
                   </h2>
                 </div>

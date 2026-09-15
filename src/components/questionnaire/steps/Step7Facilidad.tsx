@@ -26,7 +26,7 @@ export function Step7Facilidad({
         </p>
       </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      <div className="service-card-stack">
         {priorityServices.map((service) => {
           const ans: Partial<ServiceAnswerItem> = answers[service.id] || {};
           const issues = ans.operationalIssues || [];
@@ -43,7 +43,7 @@ export function Step7Facilidad({
                   <FormLabel>Facilidad de gestión operativa (1 = Muy difícil, 5 = Muy fácil)</FormLabel>
                   <ScaleSelector
                     id={`ease-${service.id}`}
-                    value={ans.operationalEaseScore ?? 3}
+                    value={ans.operationalEaseScore ?? null}
                     isUncertain={false}
                     onChange={(score) =>
                       onUpdateAnswer(service.id, { operationalEaseScore: score })

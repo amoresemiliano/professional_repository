@@ -46,7 +46,7 @@ export function Step6Rentabilidad({
 
                 <ScaleSelector
                   id={`profitability-${service.id}`}
-                  value={ans.profitabilityScore ?? 3}
+                  value={ans.profitabilityScore ?? null}
                   isUncertain={ans.profitabilityIsUncertain ?? false}
                   onChange={(score, isUncertain) =>
                     onUpdateAnswer(service.id, {
