@@ -1,0 +1,6 @@
+{
+  "name": "Vegen Digital Diagnóstico",
+  "description": "Herramienta de diagnóstico comercial y de marketing para profesionales y servicios jurídicos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
