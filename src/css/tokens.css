@@ -102,9 +102,9 @@
 
   /* Dimensiones Contenedores */
   --max-width-narrow: 640px;
-  --max-width-form: 780px;
-  --max-width-content: 960px;
-  --max-width-wide: 1200px;
+  --max-width-form: 960px;
+  --max-width-content: 1024px;
+  --max-width-wide: 1024px;
 
   /* Estrategia Centralizada de Breakpoints */
   --breakpoint-mobile-max: 639px;

@@ -60,6 +60,7 @@ export function QuestionnaireView({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadedFromBackend, setIsLoadedFromBackend] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Servicios prioritarios activos
   const priorityServices = services.filter((s) => s.isPriority);
@@ -132,6 +133,10 @@ export function QuestionnaireView({
 
         if (Array.isArray(loaded.differentials) && loaded.differentials.length > 0) {
           setDifferentials(loaded.differentials.map((d: any) => d.differential_key));
+          const otherDiff = loaded.differentials.find((d: any) => d.differential_key === 'others');
+          if (otherDiff && otherDiff.custom_label) {
+            setCustomDifferentialText(otherDiff.custom_label);
+          }
         }
 
         if (loaded.final_pitch) {
@@ -188,7 +193,7 @@ export function QuestionnaireView({
             operational_ease_score: ans.operationalEaseScore || null,
             operational_issues: ans.operationalIssues || null,
             operational_issues_other: ans.operationalIssuesOther || null,
-            operationalNotes: ans.operationalNotes || null,
+            operational_notes: ans.operationalNotes || null,
             remote_capability: ans.remoteCapability || null,
             remote_channels: ans.remoteChannels || null,
             remote_channels_other: ans.remoteChannelsOther || null,
@@ -204,7 +209,7 @@ export function QuestionnaireView({
 
         const mappedDifferentials = differentials.map(d => ({
           differential_key: d,
-          custom_label: null,
+          custom_label: d === 'others' ? (customDifferentialText || null) : null,
         }));
 
         await questionnaireService.save(token, {
@@ -301,7 +306,10 @@ export function QuestionnaireView({
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting || isSubmitted) return;
     setIsSubmitting(true);
+    setSubmitError(null);
+
     try {
       if (token) {
         const mappedServices = services.map((s, idx) => {
@@ -345,7 +353,7 @@ export function QuestionnaireView({
 
         const mappedDifferentials = differentials.map(d => ({
           differential_key: d,
-          custom_label: null,
+          custom_label: d === 'others' ? (customDifferentialText || null) : null,
         }));
 
         const res = await questionnaireService.submit(token, {
@@ -357,6 +365,8 @@ export function QuestionnaireView({
 
         if (res.success) {
           setIsSubmitted(true);
+        } else {
+          setSubmitError(res.error || 'No se pudo completar el envío del diagnóstico.');
         }
       } else {
         await questionnaireService.submitQuestionnaire({
@@ -371,6 +381,8 @@ export function QuestionnaireView({
         });
         setIsSubmitted(true);
       }
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Error inesperado al enviar el diagnóstico.');
     } finally {
       setIsSubmitting(false);
     }
@@ -381,8 +393,22 @@ export function QuestionnaireView({
   return (
     <div className="container-form" style={{ padding: 'var(--space-6) var(--space-4)' }}>
       <main id="main-content" tabIndex={-1}>
-        {/* Barra de Progreso Accesible y Adaptativa */}
-        <ProgressBar currentStep={currentStep} stepMeta={currentStepMeta} />
+        {/* Mensaje de Error en Envío/Persistencia */}
+        {submitError && (
+          <div
+            style={{
+              backgroundColor: 'var(--color-danger-light)',
+              border: '1px solid var(--color-danger-border)',
+              borderRadius: 'var(--radius-md)',
+              padding: 'var(--space-3) var(--space-4)',
+              marginBottom: 'var(--space-4)',
+              color: 'var(--color-danger)',
+              fontSize: 'var(--font-size-sm)',
+            }}
+          >
+            <strong>Error al procesar el cuestionario:</strong> {submitError}
+          </div>
+        )}
 
         {/* Renderizado Desacoplado de Pasos */}
         {currentStep === 1 && (

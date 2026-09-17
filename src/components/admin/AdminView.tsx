@@ -19,22 +19,31 @@ interface AdminViewProps {
 }
 
 export function AdminView({
-  clientName = 'Dr. Berlioz',
+  clientName = '',
   onViewClient,
   onLogout,
 }: AdminViewProps = {}) {
   const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'questionnaires' | 'comparison' | 'matrix' | 'scoring-config' | 'security'>('overview');
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Clientes cargados desde adminService
   const [clients, setClients] = useState<ClientItem[]>(adminService.getClients());
   const [comparisonServices] = useState<ComparisonServiceRow[]>(adminService.getComparisonServices());
   const [showNewClientModal, setShowNewClientModal] = useState(false);
 
-  useEffect(() => {
-    adminService.fetchClients().then((list) => {
+  const loadClients = async () => {
+    try {
+      setErrorMsg(null);
+      const list = await adminService.fetchClients();
       setClients(list);
-    });
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Error al cargar la lista de clientes.');
+    }
+  };
+
+  useEffect(() => {
+    loadClients();
   }, []);
 
   const handleCopyLink = (token: string) => {
@@ -50,8 +59,16 @@ export function AdminView({
     contactName: string;
     contactEmail: string;
   }) => {
-    const created = await adminService.createClientAsync(data);
-    setClients([created, ...clients]);
+    try {
+      setErrorMsg(null);
+      await adminService.createClientAsync(data);
+      // Forzar refresco real desde API tras la creación
+      await loadClients();
+      setShowNewClientModal(false);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'No se pudo crear el cliente.');
+      throw err;
+    }
   };
 
   const handleLogout = async () => {

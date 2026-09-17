@@ -15,8 +15,8 @@ export default function App() {
 
   // Nombre de cliente obtenido dinámicamente desde el cuestionario / backend
   const [client, setClient] = useState({
-    id: 'c1',
-    name: 'Dr. Berlioz',
+    id: '',
+    name: '',
   });
 
   // Verificar sesión persistente al montar

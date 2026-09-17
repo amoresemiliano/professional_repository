@@ -42,21 +42,28 @@ export interface QuestionnaireSummary {
   priority_services_count: number;
 }
 
+// Helper de almacenamiento local seguro para mapeo de tokens públicos por cliente
+const getStoredToken = (clientId: string): string => {
+  try {
+    const map = JSON.parse(localStorage.getItem('vegen_q_tokens') || '{}');
+    return map[clientId] || '';
+  } catch {
+    return '';
+  }
+};
+
+const storeToken = (clientId: string, token: string): void => {
+  try {
+    const map = JSON.parse(localStorage.getItem('vegen_q_tokens') || '{}');
+    map[clientId] = token;
+    localStorage.setItem('vegen_q_tokens', JSON.stringify(map));
+  } catch {
+    // Ignore storage quota error
+  }
+};
+
 class AdminService {
-  private clients: ClientItem[] = [
-    {
-      id: 'c1',
-      name: 'Dr. Berlioz',
-      sector: 'Extranjería y Movilidad Internacional',
-      contactName: 'Dr. Berlioz',
-      contactEmail: 'contacto@drberlioz.com',
-      status: 'SENT',
-      token: 'f8d3b2e1a9c40567',
-      createdAt: '2026-09-15',
-      priorityServicesCount: 0,
-      totalServicesCount: 0,
-    },
-  ];
+  private clients: ClientItem[] = [];
 
   public getInitialWeights(): ScoringWeights {
     return {
@@ -78,20 +85,26 @@ class AdminService {
   public async fetchClients(): Promise<ClientItem[]> {
     const res = await apiRequest<any[]>('/admin/clients', { method: 'GET' });
     if (res.success && Array.isArray(res.data)) {
-      const mapped: ClientItem[] = res.data.map((c) => ({
-        id: c.id,
-        name: c.name,
-        sector: c.professional_sector,
-        contactName: c.contact_name,
-        contactEmail: c.contact_email,
-        status: (c.latest_status as ClientItem['status']) || 'SENT',
-        token: c.token_id || c.id,
-        createdAt: c.created_at ? c.created_at.split(' ')[0] : '',
-        priorityServicesCount: 0,
-        totalServicesCount: parseInt(c.questionnaires_count || '0', 10),
-      }));
+      const mapped: ClientItem[] = res.data.map((c) => {
+        const cachedToken = getStoredToken(c.id);
+        return {
+          id: c.id,
+          name: c.name,
+          sector: c.professional_sector,
+          contactName: c.contact_name,
+          contactEmail: c.contact_email,
+          status: (c.latest_status as ClientItem['status']) || 'SENT',
+          token: cachedToken || c.token_id || c.id,
+          createdAt: c.created_at ? c.created_at.split(' ')[0] : '',
+          priorityServicesCount: 0,
+          totalServicesCount: parseInt(c.questionnaires_count || '0', 10),
+        };
+      });
       this.clients = mapped;
       return mapped;
+    }
+    if (res.error) {
+      throw new Error(res.error.message || 'No se pudieron cargar los clientes del servidor');
     }
     return this.getClients();
   }
@@ -115,60 +128,33 @@ class AdminService {
       }),
     });
 
-    if (res.success && res.data) {
-      // También creamos un cuestionario con token automáticamente para este cliente
-      let token = '';
-      try {
-        const qRes = await this.createQuestionnaire(res.data.id, `Diagnóstico - ${data.name}`);
-        if (qRes && qRes.token) {
-          token = qRes.token;
-        }
-      } catch {
-        // En caso de fallo en creación de cuestionario, continúa con cliente
-      }
-
-      const newClient: ClientItem = {
-        id: res.data.id,
-        name: res.data.name,
-        sector: res.data.professional_sector,
-        contactName: res.data.contact_name,
-        contactEmail: res.data.contact_email,
-        status: 'SENT',
-        token: token || res.data.id,
-        createdAt: new Date().toISOString().split('T')[0],
-        priorityServicesCount: 0,
-        totalServicesCount: 1,
-      };
-
-      this.clients = [newClient, ...this.clients];
-      return newClient;
+    if (!res.success || !res.data) {
+      throw new Error(res.error?.message || 'No se pudo crear el cliente en el servidor.');
     }
 
-    // Fallback local
-    return this.createClient(data);
-  }
-
-  public createClient(data: {
-    name: string;
-    sector: string;
-    contactName: string;
-    contactEmail: string;
-  }): ClientItem {
-    const generatedToken =
-      Math.random().toString(36).substring(2, 10) +
-      Math.random().toString(36).substring(2, 10);
+    // Crear automáticamente un cuestionario con token único para este cliente
+    let token = '';
+    try {
+      const qRes = await this.createQuestionnaire(res.data.id, `Diagnóstico - ${data.name}`);
+      if (qRes && qRes.token) {
+        token = qRes.token;
+        storeToken(res.data.id, token);
+      }
+    } catch (err) {
+      console.warn('Cuestionario inicial no pudo ser creado:', err);
+    }
 
     const newClient: ClientItem = {
-      id: `c${Date.now()}`,
-      name: data.name,
-      sector: data.sector,
-      contactName: data.contactName,
-      contactEmail: data.contactEmail,
+      id: res.data.id,
+      name: res.data.name,
+      sector: res.data.professional_sector,
+      contactName: res.data.contact_name,
+      contactEmail: res.data.contact_email,
       status: 'SENT',
-      token: generatedToken,
+      token: token || res.data.id,
       createdAt: new Date().toISOString().split('T')[0],
       priorityServicesCount: 0,
-      totalServicesCount: 0,
+      totalServicesCount: 1,
     };
 
     this.clients = [newClient, ...this.clients];
