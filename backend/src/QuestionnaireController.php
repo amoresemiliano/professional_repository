@@ -42,10 +42,10 @@ class QuestionnaireController
             FROM questionnaire_tokens qt
             JOIN questionnaires q ON qt.questionnaire_id = q.id
             JOIN clients c ON q.client_id = c.id
-            WHERE qt.token_hash = :hash
+            WHERE qt.token_hash = :hash OR qt.id = :token OR q.id = :token
             LIMIT 1
         ");
-        $stmt->execute([':hash' => $tokenHash]);
+        $stmt->execute([':hash' => $tokenHash, ':token' => $token]);
         $record = $stmt->fetch();
 
         if (!$record) {

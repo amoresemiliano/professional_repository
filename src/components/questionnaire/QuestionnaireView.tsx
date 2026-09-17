@@ -67,13 +67,23 @@ export function QuestionnaireView({
 
   // 1. Cargar datos del cuestionario desde el backend si existe token
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setSubmitError('Acceso no válido: No se detectó un token de cuestionario en la URL. Por favor use el enlace único facilidado por su consultor (ej: /q/TOKEN).');
+      return;
+    }
 
     let isMounted = true;
     (async () => {
       try {
         const loaded = await questionnaireService.load(token);
-        if (!isMounted || !loaded) return;
+        if (!isMounted) return;
+
+        if (!loaded) {
+          setSubmitError('No fue posible cargar el cuestionario desde el servidor. El enlace puede ser inválido o haber expirado.');
+          return;
+        }
+
+        setSubmitError(null);
 
         if (loaded.client_name) {
           onClientNameLoaded?.(loaded.client_name);
@@ -153,7 +163,9 @@ export function QuestionnaireView({
 
         setIsLoadedFromBackend(true);
       } catch (err) {
-        console.error('Error cargando cuestionario remoto:', err);
+        if (isMounted) {
+          setSubmitError('Error de red al cargar el cuestionario desde el servidor.');
+        }
       }
     })();
 
@@ -164,69 +176,77 @@ export function QuestionnaireView({
 
   // 2. Autosave incremental real contra backend
   useEffect(() => {
+    if (!token || !isLoadedFromBackend || isSubmitted) {
+      onAutoSaveStatusChange?.('idle');
+      return;
+    }
+
     onAutoSaveStatusChange?.('saving');
     const timer = setTimeout(async () => {
-      if (token) {
-        // Mapear servicios y respuestas para backend
-        const mappedServices = services.map((s, idx) => {
-          const ans = answers[s.id] || {};
-          return {
-            id: s.id,
-            name: s.name,
-            is_custom: s.isCustom ? 1 : 0,
-            is_priority: s.isPriority ? 1 : 0,
-            display_order: idx + 1,
-            client_problem: ans.clientProblem || null,
-            solution_actions: ans.solutionActions || null,
-            expected_result: ans.expectedResult || null,
-            typical_duration: ans.typicalDuration || null,
-            pricing_model: ans.pricingModel || null,
-            price_min: ans.priceMin || null,
-            price_max: ans.priceMax || null,
-            currency: ans.currency || 'EUR',
-            price_notes: ans.priceNotes || null,
-            market_position: ans.marketPosition || null,
-            estimated_market_price: ans.estimatedMarketPrice || null,
-            market_notes: ans.marketNotes || null,
-            profitability_score: ans.profitabilityScore || null,
-            profitability_is_uncertain: ans.profitabilityIsUncertain ? 1 : 0,
-            operational_ease_score: ans.operationalEaseScore || null,
-            operational_issues: ans.operationalIssues || null,
-            operational_issues_other: ans.operationalIssuesOther || null,
-            operational_notes: ans.operationalNotes || null,
-            remote_capability: ans.remoteCapability || null,
-            remote_channels: ans.remoteChannels || null,
-            remote_channels_other: ans.remoteChannelsOther || null,
-            remote_notes: ans.remoteNotes || null,
-          };
-        });
+      // Mapear servicios y respuestas para backend
+      const mappedServices = services.map((s, idx) => {
+        const ans = answers[s.id] || {};
+        return {
+          id: s.id,
+          name: s.name,
+          is_custom: s.isCustom ? 1 : 0,
+          is_priority: s.isPriority ? 1 : 0,
+          display_order: idx + 1,
+          client_problem: ans.clientProblem || null,
+          solution_actions: ans.solutionActions || null,
+          expected_result: ans.expectedResult || null,
+          typical_duration: ans.typicalDuration || null,
+          pricing_model: ans.pricingModel || null,
+          price_min: ans.priceMin || null,
+          price_max: ans.priceMax || null,
+          currency: ans.currency || 'EUR',
+          price_notes: ans.priceNotes || null,
+          market_position: ans.marketPosition || null,
+          estimated_market_price: ans.estimatedMarketPrice || null,
+          market_notes: ans.marketNotes || null,
+          profitability_score: ans.profitabilityScore || null,
+          profitability_is_uncertain: ans.profitabilityIsUncertain ? 1 : 0,
+          operational_ease_score: ans.operationalEaseScore || null,
+          operational_issues: ans.operationalIssues || null,
+          operational_issues_other: ans.operationalIssuesOther || null,
+          operational_notes: ans.operationalNotes || null,
+          remote_capability: ans.remoteCapability || null,
+          remote_channels: ans.remoteChannels || null,
+          remote_channels_other: ans.remoteChannelsOther || null,
+          remote_notes: ans.remoteNotes || null,
+        };
+      });
 
-        const mappedAudiences = audiences.map(a => ({
-          audience_key: a.key,
-          custom_label: a.label,
-          priority: a.priority || 'medium',
-        }));
+      const mappedAudiences = audiences.map(a => ({
+        audience_key: a.key,
+        custom_label: a.label,
+        priority: a.priority || 'medium',
+      }));
 
-        const mappedDifferentials = differentials.map(d => ({
-          differential_key: d,
-          custom_label: d === 'others' ? (customDifferentialText || null) : null,
-        }));
+      const mappedDifferentials = differentials.map(d => ({
+        differential_key: d,
+        custom_label: d === 'others' ? (customDifferentialText || null) : null,
+      }));
 
-        await questionnaireService.save(token, {
-          current_step: currentStep,
-          final_pitch: finalPitch,
-          services: mappedServices,
-          target_audiences: mappedAudiences,
-          differentials: mappedDifferentials,
-        });
+      const saved = await questionnaireService.save(token, {
+        current_step: currentStep,
+        final_pitch: finalPitch,
+        services: mappedServices,
+        target_audiences: mappedAudiences,
+        differentials: mappedDifferentials,
+      });
+
+      if (saved) {
+        setSubmitError(null);
+        onAutoSaveStatusChange?.('saved');
       } else {
-        await questionnaireService.autoSaveAnswers(answers);
+        setSubmitError('Fallo al guardar cambios en el servidor. Verifique su conexión.');
+        onAutoSaveStatusChange?.('idle');
       }
-      onAutoSaveStatusChange?.('saved');
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [services, answers, audiences, differentials, customDifferentialText, finalPitch, currentStep, token, onAutoSaveStatusChange]);
+  }, [services, answers, audiences, differentials, customDifferentialText, finalPitch, currentStep, token, isLoadedFromBackend, isSubmitted, onAutoSaveStatusChange]);
 
   // Manejadores para Paso 1 (Oferta)
   const handleToggleServiceSelection = (serviceName: string) => {
@@ -311,77 +331,67 @@ export function QuestionnaireView({
     setSubmitError(null);
 
     try {
-      if (token) {
-        const mappedServices = services.map((s, idx) => {
-          const ans = answers[s.id] || {};
-          return {
-            id: s.id,
-            name: s.name,
-            is_custom: s.isCustom ? 1 : 0,
-            is_priority: s.isPriority ? 1 : 0,
-            display_order: idx + 1,
-            client_problem: ans.clientProblem || null,
-            solution_actions: ans.solutionActions || null,
-            expected_result: ans.expectedResult || null,
-            typical_duration: ans.typicalDuration || null,
-            pricing_model: ans.pricingModel || null,
-            price_min: ans.priceMin || null,
-            price_max: ans.priceMax || null,
-            currency: ans.currency || 'EUR',
-            price_notes: ans.priceNotes || null,
-            market_position: ans.marketPosition || null,
-            estimated_market_price: ans.estimatedMarketPrice || null,
-            market_notes: ans.marketNotes || null,
-            profitability_score: ans.profitabilityScore || null,
-            profitability_is_uncertain: ans.profitabilityIsUncertain ? 1 : 0,
-            operational_ease_score: ans.operationalEaseScore || null,
-            operational_issues: ans.operationalIssues || null,
-            operational_issues_other: ans.operationalIssuesOther || null,
-            operational_notes: ans.operationalNotes || null,
-            remote_capability: ans.remoteCapability || null,
-            remote_channels: ans.remoteChannels || null,
-            remote_channels_other: ans.remoteChannelsOther || null,
-            remote_notes: ans.remoteNotes || null,
-          };
-        });
+      if (!token || !isLoadedFromBackend) {
+        setSubmitError('Imposible enviar: El cuestionario no está vinculado con el servidor. Acceda mediante su enlace personal.');
+        return;
+      }
 
-        const mappedAudiences = audiences.map(a => ({
-          audience_key: a.key,
-          custom_label: a.label,
-          priority: a.priority || 'medium',
-        }));
+      const mappedServices = services.map((s, idx) => {
+        const ans = answers[s.id] || {};
+        return {
+          id: s.id,
+          name: s.name,
+          is_custom: s.isCustom ? 1 : 0,
+          is_priority: s.isPriority ? 1 : 0,
+          display_order: idx + 1,
+          client_problem: ans.clientProblem || null,
+          solution_actions: ans.solutionActions || null,
+          expected_result: ans.expectedResult || null,
+          typical_duration: ans.typicalDuration || null,
+          pricing_model: ans.pricingModel || null,
+          price_min: ans.priceMin || null,
+          price_max: ans.priceMax || null,
+          currency: ans.currency || 'EUR',
+          price_notes: ans.priceNotes || null,
+          market_position: ans.marketPosition || null,
+          estimated_market_price: ans.estimatedMarketPrice || null,
+          market_notes: ans.marketNotes || null,
+          profitability_score: ans.profitabilityScore || null,
+          profitability_is_uncertain: ans.profitabilityIsUncertain ? 1 : 0,
+          operational_ease_score: ans.operationalEaseScore || null,
+          operational_issues: ans.operationalIssues || null,
+          operational_issues_other: ans.operationalIssuesOther || null,
+          operational_notes: ans.operationalNotes || null,
+          remote_capability: ans.remoteCapability || null,
+          remote_channels: ans.remoteChannels || null,
+          remote_channels_other: ans.remoteChannelsOther || null,
+          remote_notes: ans.remoteNotes || null,
+        };
+      });
 
-        const mappedDifferentials = differentials.map(d => ({
-          differential_key: d,
-          custom_label: d === 'others' ? (customDifferentialText || null) : null,
-        }));
+      const mappedAudiences = audiences.map(a => ({
+        audience_key: a.key,
+        custom_label: a.label,
+        priority: a.priority || 'medium',
+      }));
 
-        const res = await questionnaireService.submit(token, {
-          final_pitch: finalPitch,
-          services: mappedServices,
-          target_audiences: mappedAudiences,
-          differentials: mappedDifferentials,
-        });
+      const mappedDifferentials = differentials.map(d => ({
+        differential_key: d,
+        custom_label: d === 'others' ? (customDifferentialText || null) : null,
+      }));
 
-        if (res.success) {
-          setIsSubmitted(true);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-          setSubmitError(res.error || 'No se pudo completar el envío del diagnóstico.');
-        }
-      } else {
-        await questionnaireService.submitQuestionnaire({
-          services,
-          answers,
-          targetAudiences: audiences,
-          customAudiences: [],
-          differentials,
-          customDifferentialText,
-          valueProposition: finalPitch,
-          isCompleted: true,
-        });
+      const res = await questionnaireService.submit(token, {
+        final_pitch: finalPitch,
+        services: mappedServices,
+        target_audiences: mappedAudiences,
+        differentials: mappedDifferentials,
+      });
+
+      if (res.success) {
         setIsSubmitted(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        setSubmitError(res.error || 'No se pudo completar el envío del diagnóstico.');
       }
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Error inesperado al enviar el diagnóstico.');

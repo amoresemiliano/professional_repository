@@ -131,15 +131,12 @@ class QuestionnaireService {
     };
   }
 
-  public async autoSaveAnswers(_answers: Record<string, ServiceAnswerItem>): Promise<boolean> {
-    return true;
+  public async autoSaveAnswers(): Promise<boolean> {
+    throw new Error('Imposible autoguardar: Se requiere un token de cuestionario válido.');
   }
 
-  public async submitQuestionnaire(_data: QuestionnaireData): Promise<{ success: boolean; completedAt: string }> {
-    return {
-      success: true,
-      completedAt: new Date().toISOString(),
-    };
+  public async submitQuestionnaire(): Promise<{ success: boolean; completedAt: string }> {
+    throw new Error('Imposible enviar: Se requiere un token de cuestionario válido.');
   }
 }
 
