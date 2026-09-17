@@ -1,4 +1,4 @@
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useRef, useTransition } from 'react';
 import {
   ServiceItem,
   ServiceAnswerItem,
@@ -62,6 +62,79 @@ export function QuestionnaireView({
   const [isLoadedFromBackend, setIsLoadedFromBackend] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Refs de control estricto para evitar loops de renderizado y re-peticiones innecesarias
+  const lastSavedPayloadRef = useRef<string>('');
+  const isHydratingRef = useRef<boolean>(true);
+  const isSavingRef = useRef<boolean>(false);
+  const onAutoSaveStatusChangeRef = useRef(onAutoSaveStatusChange);
+
+  useEffect(() => {
+    onAutoSaveStatusChangeRef.current = onAutoSaveStatusChange;
+  }, [onAutoSaveStatusChange]);
+
+  // Helper centralizado para construir el objeto de carga útil hacia el backend
+  const buildPayloadObj = (
+    currentServices: ServiceItem[],
+    currentAnswers: Record<string, ServiceAnswerItem>,
+    currentAudiences: TargetAudienceItem[],
+    currentDifferentials: string[],
+    customDiffText: string,
+    pitch: string,
+    step: number
+  ) => {
+    const mappedServices = currentServices.map((s, idx) => {
+      const ans = currentAnswers[s.id] || {};
+      return {
+        id: s.id,
+        name: s.name,
+        is_custom: s.isCustom ? 1 : 0,
+        is_priority: s.isPriority ? 1 : 0,
+        display_order: idx + 1,
+        client_problem: ans.clientProblem || null,
+        solution_actions: ans.solutionActions || null,
+        expected_result: ans.expectedResult || null,
+        typical_duration: ans.typicalDuration || null,
+        pricing_model: ans.pricingModel || null,
+        price_min: ans.priceMin || null,
+        price_max: ans.priceMax || null,
+        currency: ans.currency || 'EUR',
+        price_notes: ans.priceNotes || null,
+        market_position: ans.marketPosition || null,
+        estimated_market_price: ans.estimatedMarketPrice || null,
+        market_notes: ans.marketNotes || null,
+        profitability_score: ans.profitabilityScore || null,
+        profitability_is_uncertain: ans.profitabilityIsUncertain ? 1 : 0,
+        operational_ease_score: ans.operationalEaseScore || null,
+        operational_issues: ans.operationalIssues || null,
+        operational_issues_other: ans.operationalIssuesOther || null,
+        operational_notes: ans.operationalNotes || null,
+        remote_capability: ans.remoteCapability || null,
+        remote_channels: ans.remoteChannels || null,
+        remote_channels_other: ans.remoteChannelsOther || null,
+        remote_notes: ans.remoteNotes || null,
+      };
+    });
+
+    const mappedAudiences = currentAudiences.map((a) => ({
+      audience_key: a.key,
+      custom_label: a.label,
+      priority: a.priority || 'medium',
+    }));
+
+    const mappedDifferentials = currentDifferentials.map((d) => ({
+      differential_key: d,
+      custom_label: d === 'others' ? (customDiffText || null) : null,
+    }));
+
+    return {
+      current_step: step,
+      final_pitch: pitch,
+      services: mappedServices,
+      target_audiences: mappedAudiences,
+      differentials: mappedDifferentials,
+    };
+  };
+
   // Servicios prioritarios activos
   const priorityServices = services.filter((s) => s.isPriority);
 
@@ -89,10 +162,15 @@ export function QuestionnaireView({
           onClientNameLoaded?.(loaded.client_name);
         }
 
-        if (Array.isArray(loaded.services) && loaded.services.length > 0) {
-          const loadedServices: ServiceItem[] = [];
-          const loadedAnswers: Record<string, ServiceAnswerItem> = {};
+        let loadedServices: ServiceItem[] = [];
+        let loadedAnswers: Record<string, ServiceAnswerItem> = {};
+        let loadedAudiences: TargetAudienceItem[] = [];
+        let loadedDiffs: string[] = [];
+        let loadedCustomDiffText = '';
+        let loadedPitch = loaded.final_pitch || '';
+        let loadedStep = loaded.current_step && loaded.current_step >= 1 && loaded.current_step <= 11 ? loaded.current_step : 1;
 
+        if (Array.isArray(loaded.services) && loaded.services.length > 0) {
           loaded.services.forEach((s: any) => {
             loadedServices.push({
               id: s.id,
@@ -131,36 +209,53 @@ export function QuestionnaireView({
 
           setServices(loadedServices);
           setAnswers(loadedAnswers);
+        } else {
+          loadedServices = services;
         }
 
         if (Array.isArray(loaded.target_audiences) && loaded.target_audiences.length > 0) {
-          setAudiences(loaded.target_audiences.map((a: any) => ({
+          loadedAudiences = loaded.target_audiences.map((a: any) => ({
             key: a.audience_key,
             label: a.custom_label || a.audience_key,
             priority: a.priority || 'medium',
-          })));
+          }));
+          setAudiences(loadedAudiences);
         }
 
         if (Array.isArray(loaded.differentials) && loaded.differentials.length > 0) {
-          setDifferentials(loaded.differentials.map((d: any) => d.differential_key));
+          loadedDiffs = loaded.differentials.map((d: any) => d.differential_key);
+          setDifferentials(loadedDiffs);
           const otherDiff = loaded.differentials.find((d: any) => d.differential_key === 'others');
           if (otherDiff && otherDiff.custom_label) {
-            setCustomDifferentialText(otherDiff.custom_label);
+            loadedCustomDiffText = otherDiff.custom_label;
+            setCustomDifferentialText(loadedCustomDiffText);
           }
         }
 
         if (loaded.final_pitch) {
-          setFinalPitch(loaded.final_pitch);
+          setFinalPitch(loadedPitch);
         }
 
-        if (loaded.current_step && loaded.current_step >= 1 && loaded.current_step <= 11) {
-          setCurrentStep(loaded.current_step);
+        if (loadedStep) {
+          setCurrentStep(loadedStep);
         }
 
         if (loaded.status === 'COMPLETED') {
           setIsSubmitted(true);
         }
 
+        // Registrar la carga útil inicial para evitar PUT inmediato de hidratación
+        const initialPayload = buildPayloadObj(
+          loadedServices,
+          loadedAnswers,
+          loadedAudiences,
+          loadedDiffs,
+          loadedCustomDiffText,
+          loadedPitch,
+          loadedStep
+        );
+        lastSavedPayloadRef.current = JSON.stringify(initialPayload);
+        isHydratingRef.current = false;
         setIsLoadedFromBackend(true);
       } catch (err) {
         if (isMounted) {
@@ -174,79 +269,54 @@ export function QuestionnaireView({
     };
   }, [token, onClientNameLoaded]);
 
-  // 2. Autosave incremental real contra backend
+  // 2. Autosave incremental real contra backend (con Debounce + Hydration & Change Guard + Concurrency Lock)
   useEffect(() => {
-    if (!token || !isLoadedFromBackend || isSubmitted) {
-      onAutoSaveStatusChange?.('idle');
+    if (!token || isHydratingRef.current || !isLoadedFromBackend || isSubmitted) {
       return;
     }
 
-    onAutoSaveStatusChange?.('saving');
+    const currentPayloadObj = buildPayloadObj(
+      services,
+      answers,
+      audiences,
+      differentials,
+      customDifferentialText,
+      finalPitch,
+      currentStep
+    );
+    const currentPayloadStr = JSON.stringify(currentPayloadObj);
+
+    // HYDRATION & CHANGE GUARD: No disparar PUT si el payload no ha sufrido modificaciones reales
+    if (currentPayloadStr === lastSavedPayloadRef.current) {
+      return;
+    }
+
     const timer = setTimeout(async () => {
-      // Mapear servicios y respuestas para backend
-      const mappedServices = services.map((s, idx) => {
-        const ans = answers[s.id] || {};
-        return {
-          id: s.id,
-          name: s.name,
-          is_custom: s.isCustom ? 1 : 0,
-          is_priority: s.isPriority ? 1 : 0,
-          display_order: idx + 1,
-          client_problem: ans.clientProblem || null,
-          solution_actions: ans.solutionActions || null,
-          expected_result: ans.expectedResult || null,
-          typical_duration: ans.typicalDuration || null,
-          pricing_model: ans.pricingModel || null,
-          price_min: ans.priceMin || null,
-          price_max: ans.priceMax || null,
-          currency: ans.currency || 'EUR',
-          price_notes: ans.priceNotes || null,
-          market_position: ans.marketPosition || null,
-          estimated_market_price: ans.estimatedMarketPrice || null,
-          market_notes: ans.marketNotes || null,
-          profitability_score: ans.profitabilityScore || null,
-          profitability_is_uncertain: ans.profitabilityIsUncertain ? 1 : 0,
-          operational_ease_score: ans.operationalEaseScore || null,
-          operational_issues: ans.operationalIssues || null,
-          operational_issues_other: ans.operationalIssuesOther || null,
-          operational_notes: ans.operationalNotes || null,
-          remote_capability: ans.remoteCapability || null,
-          remote_channels: ans.remoteChannels || null,
-          remote_channels_other: ans.remoteChannelsOther || null,
-          remote_notes: ans.remoteNotes || null,
-        };
-      });
+      if (isSavingRef.current) return;
+      isSavingRef.current = true;
+      onAutoSaveStatusChangeRef.current?.('saving');
 
-      const mappedAudiences = audiences.map(a => ({
-        audience_key: a.key,
-        custom_label: a.label,
-        priority: a.priority || 'medium',
-      }));
+      try {
+        const saved = await questionnaireService.save(token, currentPayloadObj);
 
-      const mappedDifferentials = differentials.map(d => ({
-        differential_key: d,
-        custom_label: d === 'others' ? (customDifferentialText || null) : null,
-      }));
-
-      const saved = await questionnaireService.save(token, {
-        current_step: currentStep,
-        final_pitch: finalPitch,
-        services: mappedServices,
-        target_audiences: mappedAudiences,
-        differentials: mappedDifferentials,
-      });
-
-      if (saved) {
-        setSubmitError(null);
-        onAutoSaveStatusChange?.('saved');
-      } else {
-        setSubmitError('Fallo al guardar cambios en el servidor. Verifique su conexión.');
-        onAutoSaveStatusChange?.('idle');
+        if (saved) {
+          lastSavedPayloadRef.current = currentPayloadStr;
+          setSubmitError(null);
+          onAutoSaveStatusChangeRef.current?.('saved');
+        } else {
+          setSubmitError('Fallo al guardar cambios en el servidor. Verifique su conexión.');
+          onAutoSaveStatusChangeRef.current?.('idle');
+        }
+      } catch {
+        setSubmitError('Error de red durante el guardado automático.');
+        onAutoSaveStatusChangeRef.current?.('idle');
+      } finally {
+        isSavingRef.current = false;
       }
-    }, 600);
+    }, 800);
 
     return () => clearTimeout(timer);
-  }, [services, answers, audiences, differentials, customDifferentialText, finalPitch, currentStep, token, isLoadedFromBackend, isSubmitted, onAutoSaveStatusChange]);
+  }, [services, answers, audiences, differentials, customDifferentialText, finalPitch, currentStep, token, isLoadedFromBackend, isSubmitted]);
 
   // Manejadores para Paso 1 (Oferta)
   const handleToggleServiceSelection = (serviceName: string) => {
