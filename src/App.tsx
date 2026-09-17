@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from './components/common/Header';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { QuestionnaireView } from './components/questionnaire/QuestionnaireView';
@@ -13,11 +13,20 @@ export default function App() {
   );
   const [autosaveStatus, setAutosaveStatus] = useState<'saved' | 'saving' | 'idle'>('saved');
 
-  // Configuración de cliente configurable (Dr. Berlioz para mock F1.2, desacoplado de la UI)
-  const [client] = useState({
+  // Nombre de cliente obtenido dinámicamente desde el cuestionario / backend
+  const [client, setClient] = useState({
     id: 'c1',
     name: 'Dr. Berlioz',
   });
+
+  // Verificar sesión persistente al montar
+  useEffect(() => {
+    authService.checkSession().then((session) => {
+      if (session.isAuthenticated) {
+        setIsAdminAuthenticated(true);
+      }
+    });
+  }, []);
 
   const handleToggleMode = (mode: 'client' | 'admin') => {
     setCurrentMode(mode);
@@ -47,6 +56,7 @@ export default function App() {
           {currentMode === 'client' ? (
             <QuestionnaireView
               clientName={client.name}
+              onClientNameLoaded={(loadedName) => setClient((prev) => ({ ...prev, name: loadedName }))}
               onAutoSaveStatusChange={setAutosaveStatus}
               onNavigateToAdmin={() => setCurrentMode('admin')}
             />

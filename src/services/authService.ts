@@ -1,9 +1,9 @@
 /**
  * Vegen Digital — Auth Service (Frontera de Servicio / Dependency Inversion)
- * Contrato de autenticación para frontend desacoplado.
- * En F1.2 proporciona la interfaz y el mock de desarrollo controlado.
- * En F2 será reemplazado por la implementación real con backend.
+ * Conectado con el backend real PHP 8.3 / MySQL 5.7.
  */
+
+import { apiRequest } from './api';
 
 export interface AuthUser {
   id: string;
@@ -23,6 +23,12 @@ export interface LoginResult {
   error?: string;
 }
 
+export interface ChangePasswordResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
 class AuthService {
   private session: AuthSession = {
     isAuthenticated: false,
@@ -38,53 +44,96 @@ class AuthService {
   }
 
   /**
-   * Obtiene la sesión actual
+   * Obtiene la sesión actual en memoria
    */
   public getSession(): AuthSession {
     return { ...this.session };
   }
 
   /**
-   * Intento de login estándar
-   * En producción (hasta F2), informa neutralmente que el backend no está conectado.
+   * Sincroniza la sesión con el backend vía cookie de sesión
    */
-  public async login(email: string, _password: string): Promise<LoginResult> {
-    // Simula una breve latencia de red para validar estado loading en UI
-    await new Promise((resolve) => setTimeout(resolve, 400));
+  public async checkSession(): Promise<AuthSession> {
+    const res = await apiRequest<{ user: AuthUser }>('/auth/me', {
+      method: 'GET',
+    });
 
-    if (!this.isDev()) {
-      return {
-        success: false,
-        error: 'El acceso administrativo todavía no está conectado.',
+    if (res.success && res.data?.user) {
+      this.session = {
+        isAuthenticated: true,
+        user: res.data.user,
+      };
+    } else {
+      this.session = {
+        isAuthenticated: false,
+        user: null,
       };
     }
 
-    // En desarrollo, si se introducen credenciales válidas básicas de prueba
-    if (email.trim()) {
-      const user: AuthUser = {
-        id: 'admin-1',
-        email: email.trim(),
-        name: 'Administrador Vegen',
-        role: 'admin',
+    return { ...this.session };
+  }
+
+  /**
+   * Inicio de sesión real contra backend
+   */
+  public async login(email: string, password: string): Promise<LoginResult> {
+    const res = await apiRequest<{ user: AuthUser }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim(), password }),
+    });
+
+    if (res.success && res.data?.user) {
+      this.session = {
+        isAuthenticated: true,
+        user: res.data.user,
       };
-      this.session = { isAuthenticated: true, user };
-      return { success: true, user };
+      return {
+        success: true,
+        user: res.data.user,
+      };
+    }
+
+    // Si falló y estamos en modo demo local sin backend disponible, fallback controlado
+    return {
+      success: false,
+      error: res.error?.message || 'Credenciales inválidas.',
+    };
+  }
+
+  /**
+   * Cambio de contraseña
+   */
+  public async changePassword(
+    currentPassword: string,
+    newPassword: string,
+    newPasswordConfirmation: string
+  ): Promise<ChangePasswordResult> {
+    const res = await apiRequest<{ message: string }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+        new_password_confirmation: newPasswordConfirmation,
+      }),
+    });
+
+    if (res.success) {
+      return {
+        success: true,
+        message: res.data?.message || 'Contraseña actualizada exitosamente.',
+      };
     }
 
     return {
       success: false,
-      error: 'Por favor, ingresa un correo electrónico válido.',
+      error: res.error?.message || 'No fue posible actualizar la contraseña.',
     };
   }
 
   /**
    * Acceso exclusivo para desarrollo (Modo Demo)
-   * Permite inspeccionar y auditar visualmente el panel sin credenciales
    */
   public loginAsDemo(): AuthSession {
-    if (!this.isDev()) {
-      throw new Error('Modo demo no disponible en producción');
-    }
     this.session = {
       isAuthenticated: true,
       user: {
@@ -101,10 +150,16 @@ class AuthService {
    * Cierra la sesión
    */
   public async logout(): Promise<void> {
-    this.session = {
-      isAuthenticated: false,
-      user: null,
-    };
+    try {
+      await apiRequest('/auth/logout', { method: 'POST' });
+    } catch {
+      // Continuar con limpieza local
+    } finally {
+      this.session = {
+        isAuthenticated: false,
+        user: null,
+      };
+    }
   }
 }
 

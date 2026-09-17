@@ -26,15 +26,29 @@ interface QuestionnaireViewProps {
   onAutoSaveStatusChange?: (status: 'saved' | 'saving' | 'idle') => void;
   onNavigateToAdmin?: () => void;
   clientName?: string;
+  onClientNameLoaded?: (name: string) => void;
+  initialToken?: string | null;
 }
 
 export function QuestionnaireView({
   onAutoSaveStatusChange,
+  onClientNameLoaded,
+  initialToken,
 }: QuestionnaireViewProps) {
+  // Extraer token desde prop o URL (/q/{token} o ?token={token})
+  const [token] = useState<string | null>(() => {
+    if (initialToken) return initialToken;
+    const searchParams = new URLSearchParams(window.location.search);
+    const fromQuery = searchParams.get('token');
+    if (fromQuery) return fromQuery;
+    const pathMatch = window.location.pathname.match(/\/q\/([a-zA-Z0-9_-]+)/);
+    return pathMatch ? pathMatch[1] : null;
+  });
+
   const [currentStep, setCurrentStep] = useState(1);
   const [, startTransition] = useTransition();
 
-  // Estados del cuestionario inicializados limpios mediante factory (sin respuestas mock ni valores prefabricados)
+  // Estados del cuestionario inicializados limpios mediante factory
   const [initialState] = useState(() => getInitialQuestionnaireState());
   const [services, setServices] = useState<ServiceItem[]>(initialState.services);
   const [answers, setAnswers] = useState<Record<string, ServiceAnswerItem>>(initialState.answers);
@@ -45,19 +59,169 @@ export function QuestionnaireView({
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadedFromBackend, setIsLoadedFromBackend] = useState(false);
 
   // Servicios prioritarios activos
   const priorityServices = services.filter((s) => s.isPriority);
 
-  // Autosave simulado
+  // 1. Cargar datos del cuestionario desde el backend si existe token
+  useEffect(() => {
+    if (!token) return;
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const loaded = await questionnaireService.load(token);
+        if (!isMounted || !loaded) return;
+
+        if (loaded.client_name) {
+          onClientNameLoaded?.(loaded.client_name);
+        }
+
+        if (Array.isArray(loaded.services) && loaded.services.length > 0) {
+          const loadedServices: ServiceItem[] = [];
+          const loadedAnswers: Record<string, ServiceAnswerItem> = {};
+
+          loaded.services.forEach((s: any) => {
+            loadedServices.push({
+              id: s.id,
+              name: s.name,
+              isCustom: Boolean(Number(s.is_custom)),
+              isPriority: Boolean(Number(s.is_priority)),
+              displayOrder: Number(s.display_order),
+            });
+
+            loadedAnswers[s.id] = {
+              serviceId: s.id,
+              clientProblem: s.client_problem || '',
+              solutionActions: s.solution_actions || '',
+              expectedResult: s.expected_result || '',
+              typicalDuration: s.typical_duration || '',
+              pricingModel: s.pricing_model || '',
+              priceMin: s.price_min ? Number(s.price_min) : undefined,
+              priceMax: s.price_max ? Number(s.price_max) : undefined,
+              currency: s.currency || 'EUR',
+              priceNotes: s.price_notes || '',
+              marketPosition: s.market_position || '',
+              estimatedMarketPrice: s.estimated_market_price ? Number(s.estimated_market_price) : undefined,
+              marketNotes: s.market_notes || '',
+              profitabilityScore: s.profitability_score ? Number(s.profitability_score) : undefined,
+              profitabilityIsUncertain: Boolean(Number(s.profitability_is_uncertain)),
+              operationalEaseScore: s.operational_ease_score ? Number(s.operational_ease_score) : undefined,
+              operationalIssues: s.operational_issues ? (typeof s.operational_issues === 'string' ? JSON.parse(s.operational_issues) : s.operational_issues) : [],
+              operationalIssuesOther: s.operational_issues_other || '',
+              operationalNotes: s.operational_notes || '',
+              remoteCapability: s.remote_capability || '',
+              remoteChannels: s.remote_channels ? (typeof s.remote_channels === 'string' ? JSON.parse(s.remote_channels) : s.remote_channels) : [],
+              remoteChannelsOther: s.remote_channels_other || '',
+              remoteNotes: s.remote_notes || '',
+            };
+          });
+
+          setServices(loadedServices);
+          setAnswers(loadedAnswers);
+        }
+
+        if (Array.isArray(loaded.target_audiences) && loaded.target_audiences.length > 0) {
+          setAudiences(loaded.target_audiences.map((a: any) => ({
+            key: a.audience_key,
+            label: a.custom_label || a.audience_key,
+            priority: a.priority || 'medium',
+          })));
+        }
+
+        if (Array.isArray(loaded.differentials) && loaded.differentials.length > 0) {
+          setDifferentials(loaded.differentials.map((d: any) => d.differential_key));
+        }
+
+        if (loaded.final_pitch) {
+          setFinalPitch(loaded.final_pitch);
+        }
+
+        if (loaded.current_step && loaded.current_step >= 1 && loaded.current_step <= 11) {
+          setCurrentStep(loaded.current_step);
+        }
+
+        if (loaded.status === 'COMPLETED') {
+          setIsSubmitted(true);
+        }
+
+        setIsLoadedFromBackend(true);
+      } catch (err) {
+        console.error('Error cargando cuestionario remoto:', err);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [token, onClientNameLoaded]);
+
+  // 2. Autosave incremental real contra backend
   useEffect(() => {
     onAutoSaveStatusChange?.('saving');
-    const timer = setTimeout(() => {
-      questionnaireService.autoSaveAnswers(answers);
+    const timer = setTimeout(async () => {
+      if (token) {
+        // Mapear servicios y respuestas para backend
+        const mappedServices = services.map((s, idx) => {
+          const ans = answers[s.id] || {};
+          return {
+            id: s.id,
+            name: s.name,
+            is_custom: s.isCustom ? 1 : 0,
+            is_priority: s.isPriority ? 1 : 0,
+            display_order: idx + 1,
+            client_problem: ans.clientProblem || null,
+            solution_actions: ans.solutionActions || null,
+            expected_result: ans.expectedResult || null,
+            typical_duration: ans.typicalDuration || null,
+            pricing_model: ans.pricingModel || null,
+            price_min: ans.priceMin || null,
+            price_max: ans.priceMax || null,
+            currency: ans.currency || 'EUR',
+            price_notes: ans.priceNotes || null,
+            market_position: ans.marketPosition || null,
+            estimated_market_price: ans.estimatedMarketPrice || null,
+            market_notes: ans.marketNotes || null,
+            profitability_score: ans.profitabilityScore || null,
+            profitability_is_uncertain: ans.profitabilityIsUncertain ? 1 : 0,
+            operational_ease_score: ans.operationalEaseScore || null,
+            operational_issues: ans.operationalIssues || null,
+            operational_issues_other: ans.operationalIssuesOther || null,
+            operationalNotes: ans.operationalNotes || null,
+            remote_capability: ans.remoteCapability || null,
+            remote_channels: ans.remoteChannels || null,
+            remote_channels_other: ans.remoteChannelsOther || null,
+            remote_notes: ans.remoteNotes || null,
+          };
+        });
+
+        const mappedAudiences = audiences.map(a => ({
+          audience_key: a.key,
+          custom_label: a.label,
+          priority: a.priority || 'medium',
+        }));
+
+        const mappedDifferentials = differentials.map(d => ({
+          differential_key: d,
+          custom_label: null,
+        }));
+
+        await questionnaireService.save(token, {
+          current_step: currentStep,
+          final_pitch: finalPitch,
+          services: mappedServices,
+          target_audiences: mappedAudiences,
+          differentials: mappedDifferentials,
+        });
+      } else {
+        await questionnaireService.autoSaveAnswers(answers);
+      }
       onAutoSaveStatusChange?.('saved');
     }, 600);
+
     return () => clearTimeout(timer);
-  }, [services, answers, audiences, differentials, customDifferentialText, finalPitch, onAutoSaveStatusChange]);
+  }, [services, answers, audiences, differentials, customDifferentialText, finalPitch, currentStep, token, onAutoSaveStatusChange]);
 
   // Manejadores para Paso 1 (Oferta)
   const handleToggleServiceSelection = (serviceName: string) => {
@@ -139,17 +303,74 @@ export function QuestionnaireView({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      await questionnaireService.submitQuestionnaire({
-        services,
-        answers,
-        targetAudiences: audiences,
-        customAudiences: [],
-        differentials,
-        customDifferentialText,
-        valueProposition: finalPitch,
-        isCompleted: true,
-      });
-      setIsSubmitted(true);
+      if (token) {
+        const mappedServices = services.map((s, idx) => {
+          const ans = answers[s.id] || {};
+          return {
+            id: s.id,
+            name: s.name,
+            is_custom: s.isCustom ? 1 : 0,
+            is_priority: s.isPriority ? 1 : 0,
+            display_order: idx + 1,
+            client_problem: ans.clientProblem || null,
+            solution_actions: ans.solutionActions || null,
+            expected_result: ans.expectedResult || null,
+            typical_duration: ans.typicalDuration || null,
+            pricing_model: ans.pricingModel || null,
+            price_min: ans.priceMin || null,
+            price_max: ans.priceMax || null,
+            currency: ans.currency || 'EUR',
+            price_notes: ans.priceNotes || null,
+            market_position: ans.marketPosition || null,
+            estimated_market_price: ans.estimatedMarketPrice || null,
+            market_notes: ans.marketNotes || null,
+            profitability_score: ans.profitabilityScore || null,
+            profitability_is_uncertain: ans.profitabilityIsUncertain ? 1 : 0,
+            operational_ease_score: ans.operationalEaseScore || null,
+            operational_issues: ans.operationalIssues || null,
+            operational_issues_other: ans.operationalIssuesOther || null,
+            operational_notes: ans.operationalNotes || null,
+            remote_capability: ans.remoteCapability || null,
+            remote_channels: ans.remoteChannels || null,
+            remote_channels_other: ans.remoteChannelsOther || null,
+            remote_notes: ans.remoteNotes || null,
+          };
+        });
+
+        const mappedAudiences = audiences.map(a => ({
+          audience_key: a.key,
+          custom_label: a.label,
+          priority: a.priority || 'medium',
+        }));
+
+        const mappedDifferentials = differentials.map(d => ({
+          differential_key: d,
+          custom_label: null,
+        }));
+
+        const res = await questionnaireService.submit(token, {
+          final_pitch: finalPitch,
+          services: mappedServices,
+          target_audiences: mappedAudiences,
+          differentials: mappedDifferentials,
+        });
+
+        if (res.success) {
+          setIsSubmitted(true);
+        }
+      } else {
+        await questionnaireService.submitQuestionnaire({
+          services,
+          answers,
+          targetAudiences: audiences,
+          customAudiences: [],
+          differentials,
+          customDifferentialText,
+          valueProposition: finalPitch,
+          isCompleted: true,
+        });
+        setIsSubmitted(true);
+      }
     } finally {
       setIsSubmitting(false);
     }

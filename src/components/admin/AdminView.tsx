@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ClientItem } from '../../types';
 import { adminService, ComparisonServiceRow } from '../../services/adminService';
 import { authService } from '../../services/authService';
@@ -8,6 +8,8 @@ import { ClientsTab } from './tabs/ClientsTab';
 import { ComparisonTab } from './tabs/ComparisonTab';
 import { MatrixTab } from './tabs/MatrixTab';
 import { ScoringConfigTab } from './tabs/ScoringConfigTab';
+import { QuestionnairesTab } from './tabs/QuestionnairesTab';
+import { SecurityTab } from './tabs/SecurityTab';
 import { NewClientModal } from './NewClientModal';
 
 interface AdminViewProps {
@@ -21,13 +23,19 @@ export function AdminView({
   onViewClient,
   onLogout,
 }: AdminViewProps = {}) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'comparison' | 'matrix' | 'scoring-config'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'questionnaires' | 'comparison' | 'matrix' | 'scoring-config' | 'security'>('overview');
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
-  // Clientes cargados desde adminService (F1.2 Dependency Inversion)
+  // Clientes cargados desde adminService
   const [clients, setClients] = useState<ClientItem[]>(adminService.getClients());
   const [comparisonServices] = useState<ComparisonServiceRow[]>(adminService.getComparisonServices());
   const [showNewClientModal, setShowNewClientModal] = useState(false);
+
+  useEffect(() => {
+    adminService.fetchClients().then((list) => {
+      setClients(list);
+    });
+  }, []);
 
   const handleCopyLink = (token: string) => {
     const fullUrl = `${window.location.origin}/q/${token}`;
@@ -36,13 +44,13 @@ export function AdminView({
     setTimeout(() => setCopiedToken(null), 2500);
   };
 
-  const handleCreateClient = (data: {
+  const handleCreateClient = async (data: {
     name: string;
     sector: string;
     contactName: string;
     contactEmail: string;
   }) => {
-    const created = adminService.createClient(data);
+    const created = await adminService.createClientAsync(data);
     setClients([created, ...clients]);
   };
 
@@ -82,9 +90,11 @@ export function AdminView({
           {[
             { id: 'overview', label: 'Resumen General' },
             { id: 'clients', label: 'Clientes y Enlaces' },
+            { id: 'questionnaires', label: 'Cuestionarios y Respuestas' },
             { id: 'comparison', label: 'Comparativa de Servicios' },
             { id: 'matrix', label: 'Opportunity Matrix' },
             { id: 'scoring-config', label: 'Configuración de Scoring' },
+            { id: 'security', label: 'Mi cuenta / Seguridad' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -141,6 +151,10 @@ export function AdminView({
           />
         )}
 
+        {activeTab === 'questionnaires' && (
+          <QuestionnairesTab />
+        )}
+
         {activeTab === 'comparison' && (
           <ComparisonTab
             services={comparisonServices}
@@ -154,6 +168,10 @@ export function AdminView({
 
         {activeTab === 'scoring-config' && (
           <ScoringConfigTab />
+        )}
+
+        {activeTab === 'security' && (
+          <SecurityTab />
         )}
       </main>
 

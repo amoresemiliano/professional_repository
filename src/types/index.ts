@@ -5,6 +5,7 @@ export interface ServiceItem {
   name: string;
   isCustom?: boolean;
   isPriority?: boolean;
+  displayOrder?: number;
 }
 
 export type PricingModel = 'fixed' | 'hourly' | 'range' | 'complexity' | 'other';

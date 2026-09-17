@@ -6,3 +6,14 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Backend & Server sensitive files
+backend/config/config.local.php
+backend/config/development.php
+backend/config/production.php
+backend/local/
+backend/logs/*.log
+backend/storage/
+vegen_professional/
+*.sql.bak
+
