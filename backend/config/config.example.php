@@ -44,8 +44,9 @@ return [
         'cookie_name'     => 'vegen_sess',
         'cookie_lifetime' => 0, // sesión de navegador
         'cookie_httponly' => true,
-        'cookie_secure'   => true, // Obligatorio HTTPS en producción
-        'cookie_samesite' => 'Lax', // 'Lax' | 'Strict' | 'None'
+        'cookie_secure'   => true, // Obligatorio HTTPS para SameSite=None
+        'cookie_samesite' => 'None', // 'None' | 'Lax' | 'Strict'
+        'same_site'       => 'None',
     ],
 
     // Rutas del Sistema de Archivos (Fuera de public_html)

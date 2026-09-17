@@ -60,13 +60,30 @@ function configureSecureSession(): void
     if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
         $sessionConfig = Config::get('session') ?? [];
 
-        ini_set('session.use_strict_mode', '1');
-        ini_set('session.use_only_cookies', ($sessionConfig['use_only_cookies'] ?? true) ? '1' : '0');
-        ini_set('session.cookie_httponly', ($sessionConfig['cookie_httponly'] ?? true) ? '1' : '0');
-        ini_set('session.cookie_secure', ($sessionConfig['cookie_secure'] ?? true) ? '1' : '0');
+        $useOnlyCookies = $sessionConfig['use_only_cookies'] ?? true;
+        $httpOnly = $sessionConfig['cookie_httponly'] ?? ($sessionConfig['httponly'] ?? true);
+        $secure = $sessionConfig['cookie_secure'] ?? ($sessionConfig['secure'] ?? true);
+        $sameSite = $sessionConfig['same_site'] ?? ($sessionConfig['cookie_samesite'] ?? 'None');
+        $lifetime = (int)($sessionConfig['cookie_lifetime'] ?? ($sessionConfig['lifetime'] ?? 0));
 
-        if (!empty($sessionConfig['cookie_samesite'])) {
-            ini_set('session.cookie_samesite', (string)$sessionConfig['cookie_samesite']);
+        ini_set('session.use_strict_mode', '1');
+        ini_set('session.use_only_cookies', $useOnlyCookies ? '1' : '0');
+        ini_set('session.cookie_httponly', $httpOnly ? '1' : '0');
+        ini_set('session.cookie_secure', $secure ? '1' : '0');
+
+        if (!empty($sameSite)) {
+            ini_set('session.cookie_samesite', (string)$sameSite);
+        }
+
+        if (function_exists('session_set_cookie_params')) {
+            session_set_cookie_params([
+                'lifetime' => $lifetime,
+                'path'     => '/',
+                'domain'   => '',
+                'secure'   => (bool)$secure,
+                'httponly' => (bool)$httpOnly,
+                'samesite' => (string)$sameSite,
+            ]);
         }
     }
 }

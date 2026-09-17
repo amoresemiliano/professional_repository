@@ -365,6 +365,7 @@ export function QuestionnaireView({
 
         if (res.success) {
           setIsSubmitted(true);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
           setSubmitError(res.error || 'No se pudo completar el envío del diagnóstico.');
         }
@@ -380,6 +381,7 @@ export function QuestionnaireView({
           isCompleted: true,
         });
         setIsSubmitted(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Error inesperado al enviar el diagnóstico.');
