@@ -63,12 +63,18 @@ export interface ClientItem {
   id: string;
   name: string;
   sector: string;
+  country?: string;
   contactName: string;
   contactEmail: string;
+  contactPhone?: string;
+  notes?: string;
   status: QuestionnaireStatus;
   token: string;
+  isProtected?: boolean;
   createdAt: string;
+  updatedAt?: string;
   completedAt?: string;
   priorityServicesCount?: number;
   totalServicesCount?: number;
+  questionnaires?: any[];
 }

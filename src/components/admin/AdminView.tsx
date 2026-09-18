@@ -11,6 +11,7 @@ import { ScoringConfigTab } from './tabs/ScoringConfigTab';
 import { QuestionnairesTab } from './tabs/QuestionnairesTab';
 import { SecurityTab } from './tabs/SecurityTab';
 import { NewClientModal } from './NewClientModal';
+import { IconExternalLink, IconLogOut } from '../common/Icons';
 
 interface AdminViewProps {
   clientName?: string;
@@ -24,8 +25,10 @@ export function AdminView({
   onLogout,
 }: AdminViewProps = {}) {
   const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'questionnaires' | 'comparison' | 'matrix' | 'scoring-config' | 'security'>('overview');
+  const [questionnairesFilter, setQuestionnairesFilter] = useState<string>('ALL');
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Clientes cargados desde adminService
   const [clients, setClients] = useState<ClientItem[]>(adminService.getClients());
@@ -62,7 +65,6 @@ export function AdminView({
     try {
       setErrorMsg(null);
       await adminService.createClientAsync(data);
-      // Forzar refresco real desde API tras la creación
       await loadClients();
       setShowNewClientModal(false);
     } catch (err) {
@@ -76,10 +78,29 @@ export function AdminView({
     onLogout?.();
   };
 
+  const handleNavigateFromOverview = (tab: typeof activeTab, filter?: string) => {
+    if (filter) {
+      setQuestionnairesFilter(filter);
+    } else {
+      setQuestionnairesFilter('ALL');
+    }
+    setActiveTab(tab);
+  };
+
+  const navItems = [
+    { id: 'overview', label: 'Resumen' },
+    { id: 'clients', label: 'Clientes' },
+    { id: 'questionnaires', label: 'Diagnósticos' },
+    { id: 'matrix', label: 'Matriz' },
+    { id: 'scoring-config', label: 'Scoring' },
+    { id: 'security', label: 'Seguridad' },
+  ];
+
   return (
-    <div className="container container-wide" style={{ padding: 'var(--space-6) var(--space-4)' }}>
+    <div className="container container-wide" style={{ padding: 'var(--space-5) var(--space-4)', maxWidth: '1280px', margin: '0 auto' }}>
       {/* Barra de Navegación del Panel de Administración */}
-      <div
+      <header
+        className="admin-header-nav"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -88,63 +109,94 @@ export function AdminView({
           gap: 'var(--space-3)',
           marginBottom: 'var(--space-6)',
           borderBottom: '1px solid var(--color-border)',
-          paddingBottom: 'var(--space-4)',
+          paddingBottom: 'var(--space-3)',
         }}
       >
-        {/* Pestañas de Navegación (Horizontalmente scrollables en móvil sin recortar) */}
-        <nav
-          className="admin-tab-nav"
-          style={{
-            display: 'flex',
-            gap: 'var(--space-1)',
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
-            maxWidth: '100%',
-            paddingBottom: '2px',
-          }}
-          aria-label="Navegación del panel de administración"
-        >
-          {[
-            { id: 'overview', label: 'Resumen General' },
-            { id: 'clients', label: 'Clientes y Enlaces' },
-            { id: 'questionnaires', label: 'Cuestionarios y Respuestas' },
-            { id: 'comparison', label: 'Comparativa de Servicios' },
-            { id: 'matrix', label: 'Opportunity Matrix' },
-            { id: 'scoring-config', label: 'Configuración de Scoring' },
-            { id: 'security', label: 'Mi cuenta / Seguridad' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              className={`btn btn-sm ${activeTab === tab.id ? 'btn-primary' : 'btn-ghost'}`}
-              style={{
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                minHeight: '38px',
-                padding: '0.4rem 0.85rem',
-              }}
-              onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              aria-current={activeTab === tab.id ? 'page' : undefined}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+        {/* Lado Izquierdo: Pestañas Principales */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+          {/* Brand Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginRight: 'var(--space-2)' }}>
+            <span style={{ fontWeight: 'var(--font-weight-bold)', color: 'var(--color-brand)', fontSize: 'var(--font-size-base)', letterSpacing: '-0.02em' }}>
+              Vegen
+            </span>
+            <span style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', borderLeft: '1px solid var(--color-border)', paddingLeft: '8px' }}>
+              Admin
+            </span>
+          </div>
 
-        {/* Acciones de Sesión */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          {/* Navegación Desktop */}
+          <nav
+            className="admin-desktop-tabs"
+            style={{
+              display: 'flex',
+              gap: 'var(--space-1)',
+              flexWrap: 'wrap',
+            }}
+            aria-label="Navegación del panel de administración"
+          >
+            {navItems.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={`btn btn-sm ${activeTab === tab.id ? 'btn-primary' : 'btn-ghost'}`}
+                style={{
+                  minHeight: '36px',
+                  padding: '0.35rem 0.75rem',
+                  fontSize: 'var(--font-size-xs)',
+                  fontWeight: activeTab === tab.id ? 'var(--font-weight-semibold)' : 'var(--font-weight-medium)',
+                }}
+                onClick={() => {
+                  setActiveTab(tab.id as typeof activeTab);
+                  if (tab.id === 'questionnaires') {
+                    setQuestionnairesFilter('ALL');
+                  }
+                }}
+                aria-current={activeTab === tab.id ? 'page' : undefined}
+              >
+                {tab.label}
+              </button>
+            ))}
+
+            {/* Espacio conceptual para futuras fases (Planes, Presupuestos) */}
+            <span
+              title="Próximamente en Fase 4"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '0.35rem 0.5rem',
+                fontSize: '11px',
+                color: 'var(--color-text-tertiary)',
+                cursor: 'default',
+                opacity: 0.6,
+              }}
+            >
+              Planes (F4)
+            </span>
+          </nav>
+        </div>
+
+        {/* Lado Derecho: Acciones Secundarias */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
           {onViewClient && (
-            <Button variant="secondary" size="sm" onClick={onViewClient}>
-              Ver cuestionario
+            <Button variant="secondary" size="sm" onClick={onViewClient} title="Abrir vista de cuestionario público">
+              <IconExternalLink size={14} />
+              <span>Vista Formulario</span>
             </Button>
           )}
           {onLogout && (
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              Cerrar sesión
+            <Button variant="ghost" size="sm" onClick={handleLogout} title="Cerrar sesión de administrador">
+              <IconLogOut size={14} />
+              <span>Cerrar sesión</span>
             </Button>
           )}
         </div>
-      </div>
+      </header>
+
+      {errorMsg && (
+        <div style={{ padding: 'var(--space-3)', backgroundColor: '#FEF2F2', border: '1px solid #F87171', borderRadius: 'var(--radius-md)', color: '#991B1B', fontSize: 'var(--font-size-xs)', marginBottom: 'var(--space-4)' }}>
+          {errorMsg}
+        </div>
+      )}
 
       {/* Contenido de la Pestaña Activa */}
       <main id="admin-main-content">
@@ -152,8 +204,7 @@ export function AdminView({
           <OverviewTab
             clients={clients}
             clientName={clientName}
-            onNavigateToClients={() => setActiveTab('clients')}
-            onNavigateToComparison={() => setActiveTab('comparison')}
+            onNavigateToTab={handleNavigateFromOverview}
             onOpenNewClientModal={() => setShowNewClientModal(true)}
             onViewClient={onViewClient}
           />
@@ -165,11 +216,15 @@ export function AdminView({
             copiedToken={copiedToken}
             onCopyLink={handleCopyLink}
             onOpenNewClientModal={() => setShowNewClientModal(true)}
+            onRefreshClients={loadClients}
           />
         )}
 
         {activeTab === 'questionnaires' && (
-          <QuestionnairesTab />
+          <QuestionnairesTab
+            initialFilter={questionnairesFilter}
+            onNavigateToMatrix={() => setActiveTab('matrix')}
+          />
         )}
 
         {activeTab === 'comparison' && (

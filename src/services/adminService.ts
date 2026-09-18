@@ -33,9 +33,14 @@ export interface QuestionnaireSummary {
   title: string;
   status: 'DRAFT' | 'SENT' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED';
   current_step: number;
+  is_protected?: boolean;
   client_id: string;
   client_name: string;
   client_sector: string;
+  client_contact_name?: string;
+  client_contact_email?: string;
+  client_is_protected?: boolean;
+  token_id?: string;
   created_at: string;
   submitted_at: string | null;
   total_services_count: number;
@@ -91,11 +96,16 @@ class AdminService {
           id: c.id,
           name: c.name,
           sector: c.professional_sector,
+          country: c.country || 'España',
           contactName: c.contact_name,
           contactEmail: c.contact_email,
+          contactPhone: c.contact_phone || '',
+          notes: c.notes || '',
           status: (c.latest_status as ClientItem['status']) || 'SENT',
           token: cachedToken || c.token_id || c.id,
+          isProtected: Boolean(Number(c.is_protected)),
           createdAt: c.created_at ? c.created_at.split(' ')[0] : '',
+          updatedAt: c.updated_at || '',
           priorityServicesCount: 0,
           totalServicesCount: parseInt(c.questionnaires_count || '0', 10),
         };
@@ -110,21 +120,38 @@ class AdminService {
   }
 
   /**
+   * Obtiene el detalle administrativo de un cliente
+   */
+  public async getClientDetailAsync(id: string): Promise<any> {
+    const res = await apiRequest<any>(`/admin/clients/${id}`, { method: 'GET' });
+    if (res.success && res.data) {
+      return res.data;
+    }
+    throw new Error(res.error?.message || 'Error al obtener el detalle del cliente');
+  }
+
+  /**
    * Crea un nuevo cliente en el backend
    */
   public async createClientAsync(data: {
     name: string;
     sector: string;
+    country?: string;
     contactName: string;
     contactEmail: string;
+    contactPhone?: string;
+    notes?: string;
   }): Promise<ClientItem> {
     const res = await apiRequest<any>('/admin/clients', {
       method: 'POST',
       body: JSON.stringify({
         name: data.name,
         professional_sector: data.sector,
+        country: data.country || 'España',
         contact_name: data.contactName,
         contact_email: data.contactEmail,
+        contact_phone: data.contactPhone || null,
+        notes: data.notes || null,
       }),
     });
 
@@ -148,10 +175,14 @@ class AdminService {
       id: res.data.id,
       name: res.data.name,
       sector: res.data.professional_sector,
+      country: res.data.country || 'España',
       contactName: res.data.contact_name,
       contactEmail: res.data.contact_email,
+      contactPhone: res.data.contact_phone || '',
+      notes: res.data.notes || '',
       status: 'SENT',
       token: token || res.data.id,
+      isProtected: false,
       createdAt: new Date().toISOString().split('T')[0],
       priorityServicesCount: 0,
       totalServicesCount: 1,
@@ -162,15 +193,67 @@ class AdminService {
   }
 
   /**
+   * Actualiza datos de un cliente existente
+   */
+  public async updateClientAsync(
+    id: string,
+    data: {
+      name: string;
+      sector: string;
+      country?: string;
+      contactName: string;
+      contactEmail: string;
+      contactPhone?: string;
+      notes?: string;
+    }
+  ): Promise<any> {
+    const res = await apiRequest<any>(`/admin/clients/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: data.name,
+        professional_sector: data.sector,
+        country: data.country || 'España',
+        contact_name: data.contactName,
+        contact_email: data.contactEmail,
+        contact_phone: data.contactPhone || null,
+        notes: data.notes || null,
+      }),
+    });
+
+    if (!res.success) {
+      throw new Error(res.error?.message || 'Error al actualizar el cliente');
+    }
+
+    return res.data;
+  }
+
+  /**
+   * Archiva (soft delete) un cliente
+   */
+  public async archiveClientAsync(id: string): Promise<void> {
+    const res = await apiRequest<any>(`/admin/clients/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.success) {
+      throw new Error(res.error?.message || 'No se pudo archivar el cliente.');
+    }
+  }
+
+  /**
    * Lista todos los cuestionarios desde el backend
    */
   public async getQuestionnaires(): Promise<QuestionnaireSummary[]> {
-    const res = await apiRequest<QuestionnaireSummary[]>('/admin/questionnaires', {
+    const res = await apiRequest<any[]>('/admin/questionnaires', {
       method: 'GET',
     });
 
     if (res.success && Array.isArray(res.data)) {
-      return res.data;
+      return res.data.map((q) => ({
+        ...q,
+        is_protected: Boolean(Number(q.is_protected)),
+        client_is_protected: Boolean(Number(q.client_is_protected)),
+      }));
     }
     return [];
   }
@@ -199,9 +282,41 @@ class AdminService {
     });
 
     if (res.success && res.data) {
+      if (res.data.questionnaire) {
+        res.data.questionnaire.is_protected = Boolean(Number(res.data.questionnaire.is_protected));
+      }
       return res.data;
     }
     throw new Error(res.error?.message || 'Error al cargar detalle del cuestionario');
+  }
+
+  /**
+   * Actualiza metadata segura de un cuestionario (Título)
+   */
+  public async updateQuestionnaireMetadataAsync(id: string, data: { title: string }): Promise<any> {
+    const res = await apiRequest<any>(`/admin/questionnaires/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+
+    if (!res.success) {
+      throw new Error(res.error?.message || 'Error al actualizar metadata del cuestionario');
+    }
+
+    return res.data;
+  }
+
+  /**
+   * Archiva (soft delete) un cuestionario y revoca sus tokens
+   */
+  public async archiveQuestionnaireAsync(id: string): Promise<void> {
+    const res = await apiRequest<any>(`/admin/questionnaires/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.success) {
+      throw new Error(res.error?.message || 'No se pudo archivar el cuestionario.');
+    }
   }
 
   public getComparisonServices(): ComparisonServiceRow[] {

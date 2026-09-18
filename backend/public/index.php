@@ -21,11 +21,8 @@ $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $parsedPath = parse_url($requestUri, PHP_URL_PATH) ?? '/';
 
 // 3. Normalizar la ruta eliminando prefijos de subdirectorios de servidor
-// Ej: /vegendigital/sistemas/professional_repository/dev/api/health -> /api/health
-// O en local: /api/health
 $path = '/' . ltrim($parsedPath, '/');
 
-// Si la ruta contiene /api/, extraer desde /api/
 if (strpos($path, '/api/') !== false) {
     $path = substr($path, strpos($path, '/api/'));
 } elseif (str_ends_with($path, '/api')) {
@@ -68,9 +65,19 @@ if ($path === '/api/admin/clients') {
     }
 }
 
+if (preg_match('#^/api/admin/clients/([a-zA-Z0-9_-]+)/archive$#', $path, $matches)) {
+    if ($method === 'POST' || $method === 'DELETE') {
+        AdminController::archiveClient($matches[1]);
+    }
+}
+
 if (preg_match('#^/api/admin/clients/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
     if ($method === 'GET') {
         AdminController::getClient($matches[1]);
+    } elseif ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
+        AdminController::updateClient($matches[1]);
+    } elseif ($method === 'DELETE') {
+        AdminController::archiveClient($matches[1]);
     }
 }
 
@@ -83,9 +90,19 @@ if ($path === '/api/admin/questionnaires') {
     }
 }
 
+if (preg_match('#^/api/admin/questionnaires/([a-zA-Z0-9_-]+)/archive$#', $path, $matches)) {
+    if ($method === 'POST' || $method === 'DELETE') {
+        AdminController::archiveQuestionnaire($matches[1]);
+    }
+}
+
 if (preg_match('#^/api/admin/questionnaires/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
     if ($method === 'GET') {
         AdminController::getQuestionnaireDetail($matches[1]);
+    } elseif ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
+        AdminController::updateQuestionnaire($matches[1]);
+    } elseif ($method === 'DELETE') {
+        AdminController::archiveQuestionnaire($matches[1]);
     }
 }
 
