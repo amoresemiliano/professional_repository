@@ -138,6 +138,11 @@ export function QuestionnaireView({
   // Servicios prioritarios activos
   const priorityServices = services.filter((s) => s.isPriority);
 
+  const onClientNameLoadedRef = useRef(onClientNameLoaded);
+  useEffect(() => {
+    onClientNameLoadedRef.current = onClientNameLoaded;
+  }, [onClientNameLoaded]);
+
   // 1. Cargar datos del cuestionario desde el backend si existe token
   useEffect(() => {
     if (!token) {
@@ -159,7 +164,7 @@ export function QuestionnaireView({
         setSubmitError(null);
 
         if (loaded.client_name) {
-          onClientNameLoaded?.(loaded.client_name);
+          onClientNameLoadedRef.current?.(loaded.client_name);
         }
 
         let loadedServices: ServiceItem[] = [];
@@ -267,7 +272,7 @@ export function QuestionnaireView({
     return () => {
       isMounted = false;
     };
-  }, [token, onClientNameLoaded]);
+  }, [token]);
 
   // 2. Autosave incremental real contra backend (con Debounce + Hydration & Change Guard + Concurrency Lock)
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/common/Header';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { QuestionnaireView } from './components/questionnaire/QuestionnaireView';
@@ -18,6 +18,10 @@ export default function App() {
     id: '',
     name: '',
   });
+
+  const handleClientNameLoaded = useCallback((loadedName: string) => {
+    setClient((prev) => (prev.name === loadedName ? prev : { ...prev, name: loadedName }));
+  }, []);
 
   // Verificar sesión persistente al montar
   useEffect(() => {
@@ -56,7 +60,7 @@ export default function App() {
           {currentMode === 'client' ? (
             <QuestionnaireView
               clientName={client.name}
-              onClientNameLoaded={(loadedName) => setClient((prev) => ({ ...prev, name: loadedName }))}
+              onClientNameLoaded={handleClientNameLoaded}
               onAutoSaveStatusChange={setAutosaveStatus}
               onNavigateToAdmin={() => setCurrentMode('admin')}
             />
