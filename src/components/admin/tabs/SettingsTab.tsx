@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { VerticalsSubTab } from './VerticalsSubTab';
 import { ScoringConfigTab } from './ScoringConfigTab';
+import { VegenCatalogSubTab } from './VegenCatalogSubTab';
 import { SecurityTab } from './SecurityTab';
 
 export function SettingsTab() {
-  const [subTab, setSubTab] = useState<'verticals' | 'scoring' | 'security'>('verticals');
+  const [subTab, setSubTab] = useState<'verticals' | 'scoring' | 'vegen-catalog' | 'security'>('verticals');
 
   return (
     <div>
@@ -16,6 +17,7 @@ export function SettingsTab() {
           borderBottom: '1px solid var(--color-border)',
           paddingBottom: 'var(--space-3)',
           marginBottom: 'var(--space-6)',
+          flexWrap: 'wrap',
         }}
       >
         <button
@@ -36,6 +38,14 @@ export function SettingsTab() {
         </button>
         <button
           type="button"
+          className={`btn btn-sm ${subTab === 'vegen-catalog' ? 'btn-primary' : 'btn-ghost'}`}
+          onClick={() => setSubTab('vegen-catalog')}
+          style={{ minHeight: '34px', fontSize: 'var(--font-size-xs)' }}
+        >
+          Catálogo Vegen
+        </button>
+        <button
+          type="button"
           className={`btn btn-sm ${subTab === 'security' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setSubTab('security')}
           style={{ minHeight: '34px', fontSize: 'var(--font-size-xs)' }}
@@ -46,6 +56,7 @@ export function SettingsTab() {
 
       {subTab === 'verticals' && <VerticalsSubTab />}
       {subTab === 'scoring' && <ScoringConfigTab />}
+      {subTab === 'vegen-catalog' && <VegenCatalogSubTab />}
       {subTab === 'security' && <SecurityTab />}
     </div>
   );

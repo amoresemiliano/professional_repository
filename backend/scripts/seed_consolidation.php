@@ -73,10 +73,27 @@ try {
 
     // 3. Vegen Service Catalog (for Quotes)
     $vegenServices = [
-        ['name' => 'Diagnóstico y Auditoría Comercial Estratégica', 'price' => 950.00, 'desc' => 'Análisis exhaustivo del portfolio de servicios, oportunidades y dimensionamiento comercial.'],
-        ['name' => 'Diseño de Propuesta de Valor y Reempaquetado', 'price' => 1800.00, 'desc' => 'Reestructuración de servicios prioritarios con tarifas optimizadas y enfoque a conversión.'],
-        ['name' => 'Sistema Integral de Captación y Cualificación Digital', 'price' => 2400.00, 'desc' => 'Funnels de captación de leads cualificados y automatización del primer contacto.'],
-        ['name' => 'Acompañamiento y Optimización Comercial (Mensual)', 'price' => 1200.00, 'desc' => 'Seguimiento mensual, optimización de conversión y asesoramiento táctico.'],
+        ['name' => 'Estrategia Digital', 'price' => 1200.00, 'desc' => 'Auditoría integral, posicionamiento y plan de crecimiento digital.'],
+        ['name' => 'Desarrollo Web', 'price' => 2500.00, 'desc' => 'Sitio web profesional corporativo de alto rendimiento y conversión.'],
+        ['name' => 'Landing Page', 'price' => 950.00, 'desc' => 'Página de aterrizaje optimizada para captación de leads y ventas.'],
+        ['name' => 'SEO', 'price' => 800.00, 'desc' => 'Optimización orgánica para motores de búsqueda y posicionamiento nacional.'],
+        ['name' => 'SEO Local', 'price' => 600.00, 'desc' => 'Optimización de Google Business Profile y posicionamiento geolocalizado.'],
+        ['name' => 'Google Ads', 'price' => 750.00, 'desc' => 'Gestión y optimización de campañas de búsqueda y display en Google.'],
+        ['name' => 'Meta Ads', 'price' => 750.00, 'desc' => 'Campañas de captación y retargeting en Instagram y Facebook.'],
+        ['name' => 'LinkedIn Ads', 'price' => 850.00, 'desc' => 'Publicidad B2B segmentada por cargo, sector y empresa.'],
+        ['name' => 'Gestión de Redes Sociales', 'price' => 650.00, 'desc' => 'Creación de contenido, planificación editorial y gestión de comunidad.'],
+        ['name' => 'Email Marketing', 'price' => 550.00, 'desc' => 'Secuencias automatizadas de bienvenida, nutrición y fidelización.'],
+        ['name' => 'Automatización / n8n', 'price' => 1100.00, 'desc' => 'Flujos de trabajo conectados y automatización de procesos operativos.'],
+        ['name' => 'CRM', 'price' => 1400.00, 'desc' => 'Implementación, configuración y capacitación en pipeline de ventas.'],
+        ['name' => 'Integraciones', 'price' => 950.00, 'desc' => 'Conexión vía API entre pasarelas de pago, formularios y sistemas internos.'],
+        ['name' => 'Analítica / Tracking', 'price' => 650.00, 'desc' => 'Configuración avanzada de GA4, Google Tag Manager y eventos de conversión.'],
+        ['name' => 'Consultoría de IA', 'price' => 1500.00, 'desc' => 'Diagnóstico de viabilidad e integración de IA en la empresa.'],
+        ['name' => 'Automatizaciones con IA', 'price' => 1800.00, 'desc' => 'Agentes y procesamiento inteligente de datos y documentos.'],
+        ['name' => 'Chatbots / Asistentes IA', 'price' => 1200.00, 'desc' => 'Asistente conversacional inteligente entrenado con conocimiento del negocio.'],
+        ['name' => 'Producción de contenido', 'price' => 700.00, 'desc' => 'Redacción persuasiva, artículos especializados y contenido multimedia.'],
+        ['name' => 'Branding / Identidad', 'price' => 1600.00, 'desc' => 'Identidad visual, guía de estilo y activos de marca.'],
+        ['name' => 'Mantenimiento Web', 'price' => 350.00, 'desc' => 'Actualizaciones, seguridad, copias de seguridad y monitorización.'],
+        ['name' => 'Soporte / Optimización', 'price' => 500.00, 'desc' => 'Bolsa de horas para optimización continua de conversión y soporte.'],
     ];
 
     foreach ($vegenServices as $vs) {

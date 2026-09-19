@@ -6,8 +6,24 @@ import { AdminView } from './components/admin/AdminView';
 import { AdminLoginView } from './components/admin/AdminLoginView';
 import { authService } from './services/authService';
 
+function getInitialRoute(): { mode: 'client' | 'admin'; token: string | null } {
+  const path = window.location.pathname;
+  const searchParams = new URLSearchParams(window.location.search);
+  const fromQuery = searchParams.get('token');
+
+  // Solo rutas /q/:token, ?token=... o /q activan el modo cuestionario
+  if (path.startsWith('/q') || fromQuery) {
+    const qMatch = path.match(/^\/q(?:\/([a-zA-Z0-9_-]+))?/);
+    const token = fromQuery || qMatch?.[1] || null;
+    return { mode: 'client', token };
+  }
+
+  // Ruta raíz '/', '/admin', '/admin/login' van siempre a la plataforma de administración
+  return { mode: 'admin', token: null };
+}
+
 export default function App() {
-  const [currentMode, setCurrentMode] = useState<'client' | 'admin'>('client');
+  const [route, setRoute] = useState(getInitialRoute);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(
     () => authService.getSession().isAuthenticated
   );
@@ -23,17 +39,33 @@ export default function App() {
     setClient((prev) => (prev.name === loadedName ? prev : { ...prev, name: loadedName }));
   }, []);
 
-  // Verificar sesión persistente al montar
+  // Escuchar navegación del historial del navegador
+  useEffect(() => {
+    const handlePopState = () => {
+      setRoute(getInitialRoute());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Verificar sesión persistente al montar de forma silenciosa
   useEffect(() => {
     authService.checkSession().then((session) => {
-      if (session.isAuthenticated) {
-        setIsAdminAuthenticated(true);
-      }
+      setIsAdminAuthenticated(session.isAuthenticated);
+    }).catch(() => {
+      setIsAdminAuthenticated(false);
     });
   }, []);
 
   const handleToggleMode = (mode: 'client' | 'admin') => {
-    setCurrentMode(mode);
+    if (mode === 'client') {
+      const targetUrl = route.token ? `/q/${route.token}` : '/q';
+      window.history.pushState({}, '', targetUrl);
+      setRoute({ mode: 'client', token: route.token });
+    } else {
+      window.history.pushState({}, '', '/');
+      setRoute({ mode: 'admin', token: null });
+    }
   };
 
   const handleAdminLoginSuccess = () => {
@@ -49,7 +81,7 @@ export default function App() {
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         {/* Header Institucional Vegen Digital */}
         <Header
-          mode={currentMode}
+          mode={route.mode}
           onToggleMode={handleToggleMode}
           onLogout={handleAdminLogout}
           isAdminAuthenticated={isAdminAuthenticated}
@@ -57,24 +89,25 @@ export default function App() {
           autosaveStatus={autosaveStatus}
         />
 
-        {/* Experiencia según el rol seleccionado */}
+        {/* Experiencia según el rol y ruta activa */}
         <div style={{ flex: '1 0 auto' }}>
-          {currentMode === 'client' ? (
+          {route.mode === 'client' ? (
             <QuestionnaireView
               clientName={client.name}
+              initialToken={route.token}
               onClientNameLoaded={handleClientNameLoaded}
               onAutoSaveStatusChange={setAutosaveStatus}
-              onNavigateToAdmin={() => setCurrentMode('admin')}
+              onNavigateToAdmin={() => handleToggleMode('admin')}
             />
           ) : !isAdminAuthenticated ? (
             <AdminLoginView
               onLoginSuccess={handleAdminLoginSuccess}
-              onBackToDiagnosis={() => setCurrentMode('client')}
+              onBackToDiagnosis={() => handleToggleMode('client')}
             />
           ) : (
             <AdminView
               clientName={client.name}
-              onViewClient={() => setCurrentMode('client')}
+              onViewClient={() => handleToggleMode('client')}
               onLogout={handleAdminLogout}
             />
           )}

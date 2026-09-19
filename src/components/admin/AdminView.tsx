@@ -84,7 +84,7 @@ export function AdminView({
     { id: 'overview', label: 'Resumen' },
     { id: 'clients', label: 'Clientes' },
     { id: 'questionnaires', label: 'Diagnósticos' },
-    { id: 'matrix', label: 'Matriz' },
+    { id: 'matrix', label: 'Matriz de Oportunidad' },
     { id: 'plans', label: 'Plan Estratégico' },
     { id: 'quotes', label: 'Presupuestos' },
     { id: 'settings', label: 'Configuración' },

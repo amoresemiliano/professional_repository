@@ -19,7 +19,7 @@ export function Step2Prioritarios({
       <header className="step-header">
         <h1 className="step-title">¿Cuáles consideras tus servicios principales?</h1>
         <p className="step-description">
-          Indica entre 3 y 5 servicios que te interesan especialmente desarrollar o para los cuales quieres captar más clientes.
+          Selecciona entre 3 y 5 servicios prioritarios: aquellos que más te interesa desarrollar o para los que quieres captar más clientes.
         </p>
       </header>
 
@@ -36,11 +36,21 @@ export function Step2Prioritarios({
         >
           <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
             Prioritarios seleccionados:{' '}
-            <strong>{priorityServices.length}</strong> de {services.length}
+            <strong>{priorityServices.length}</strong> (mínimo 3, máximo 5)
           </span>
+          {priorityServices.length < 3 && (
+            <Badge variant="warning">
+              Selecciona al menos {3 - priorityServices.length} servicio{3 - priorityServices.length > 1 ? 's' : ''} más
+            </Badge>
+          )}
           {priorityServices.length >= 3 && priorityServices.length <= 5 && (
             <Badge variant="success" icon={<IconCheck size={12} />}>
-              Selección óptima (3 a 5)
+              Selección óptima ({priorityServices.length} seleccionados)
+            </Badge>
+          )}
+          {priorityServices.length > 5 && (
+            <Badge variant="danger">
+              Has seleccionado {priorityServices.length} (máximo 5 permitidos)
             </Badge>
           )}
         </div>

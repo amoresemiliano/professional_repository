@@ -15,8 +15,12 @@ use Vegen\Core\AuthController;
 use Vegen\Core\AdminController;
 use Vegen\Core\QuestionnaireController;
 
-// 2. Determinar método y URI
+// 2. Determinar método y URI con soporte para Method Override
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+if (isset($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'])) {
+    $method = strtoupper($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']);
+}
+
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $parsedPath = parse_url($requestUri, PHP_URL_PATH) ?? '/';
 
@@ -29,6 +33,10 @@ if (strpos($path, '/api/') !== false) {
     $path = '/api';
 } elseif ($path === '/health' || str_ends_with($path, '/health')) {
     $path = '/api/health';
+}
+
+if (strlen($path) > 1 && str_ends_with($path, '/')) {
+    $path = rtrim($path, '/');
 }
 
 // 4. Despacho de rutas
@@ -115,6 +123,15 @@ if ($path === '/api/admin/verticals') {
     }
 }
 
+if (preg_match('#^/api/admin/verticals/([a-zA-Z0-9_-]+)/services$#', $path, $matches)) {
+    if ($method === 'GET') {
+        $_GET['vertical_id'] = $matches[1];
+        AdminController::getCatalogServices();
+    } elseif ($method === 'POST') {
+        AdminController::createCatalogServiceForVertical($matches[1]);
+    }
+}
+
 if (preg_match('#^/api/admin/verticals/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
     if ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
         AdminController::updateVertical($matches[1]);
@@ -123,8 +140,8 @@ if (preg_match('#^/api/admin/verticals/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
     }
 }
 
-// --- ADMIN CATALOG SERVICES ---
-if ($path === '/api/admin/catalog-services') {
+// --- ADMIN CATALOG SERVICES / VERTICAL SERVICES ---
+if ($path === '/api/admin/catalog-services' || $path === '/api/admin/vertical-services') {
     if ($method === 'GET') {
         AdminController::getCatalogServices();
     } elseif ($method === 'POST') {
@@ -132,7 +149,7 @@ if ($path === '/api/admin/catalog-services') {
     }
 }
 
-if (preg_match('#^/api/admin/catalog-services/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
+if (preg_match('#^/api/admin/(?:catalog-services|vertical-services)/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
     if ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
         AdminController::updateCatalogService($matches[1]);
     } elseif ($method === 'DELETE') {

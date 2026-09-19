@@ -810,10 +810,19 @@ class AdminController
      */
     public static function createCatalogService(): void
     {
+        $input = self::getJsonBody();
+        $verticalId = trim((string)($input['vertical_id'] ?? ''));
+        self::createCatalogServiceForVertical($verticalId);
+    }
+
+    /**
+     * POST /api/admin/verticals/{id}/services
+     */
+    public static function createCatalogServiceForVertical(string $verticalId): void
+    {
         $admin = Auth::requireAdmin();
         $input = self::getJsonBody();
 
-        $verticalId = trim((string)($input['vertical_id'] ?? ''));
         $name = trim((string)($input['name'] ?? ''));
         $description = trim((string)($input['description'] ?? ''));
         $defaultPriority = isset($input['default_priority']) ? (int)(bool)$input['default_priority'] : 0;

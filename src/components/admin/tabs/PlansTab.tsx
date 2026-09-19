@@ -53,16 +53,59 @@ export function PlansTab() {
     loadData();
   }, []);
 
+  const sortedClients = [...clients].sort((a, b) => {
+    if (a.status === 'COMPLETED' && b.status !== 'COMPLETED') return -1;
+    if (b.status === 'COMPLETED' && a.status !== 'COMPLETED') return 1;
+    if (a.status === 'IN_PROGRESS' && b.status !== 'IN_PROGRESS') return -1;
+    if (b.status === 'IN_PROGRESS' && a.status !== 'IN_PROGRESS') return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  const handleSelectClient = async (clientId: string) => {
+    setFormClientId(clientId);
+    if (!clientId) return;
+
+    try {
+      const clientDetail = await adminService.getClientDetailAsync(clientId);
+      if (clientDetail && clientDetail.questionnaires && clientDetail.questionnaires.length > 0) {
+        const latestQ = clientDetail.questionnaires[0];
+        const qDetail = await adminService.getQuestionnaireDetail(latestQ.id);
+        if (qDetail && qDetail.services && qDetail.services.length > 0) {
+          const priorityOnly = qDetail.services.filter((s: any) => Boolean(Number(s.is_priority)));
+          if (priorityOnly.length > 0) {
+            setFormItems(
+              priorityOnly.map((s: any) => ({
+                service_name: s.name,
+                diagnosis: s.client_problem ? `Problema identificado: ${s.client_problem}` : '',
+                actions: s.solution_actions ? `Plan de acción: ${s.solution_actions}` : '',
+              }))
+            );
+            return;
+          }
+        }
+      }
+    } catch {
+      // Fallback a item por defecto
+    }
+
+    setFormItems([{ service_name: 'Servicio Prioritario 1', diagnosis: '', actions: '' }]);
+  };
+
   const handleOpenNew = () => {
     setEditingPlan(null);
-    setFormClientId(clients.length > 0 ? clients[0].id : '');
+    const initialClientId = sortedClients.length > 0 ? sortedClients[0].id : '';
+    setFormClientId(initialClientId);
     setFormTitle('Plan Estratégico de Crecimiento');
     setFormStatus('DRAFT');
     setFormGeneralDiag('');
     setFormGeneralActions('');
-    setFormItems([
-      { service_name: 'Servicio Prioritario 1', diagnosis: '', actions: '' },
-    ]);
+    if (initialClientId) {
+      handleSelectClient(initialClientId);
+    } else {
+      setFormItems([
+        { service_name: 'Servicio Prioritario 1', diagnosis: '', actions: '' },
+      ]);
+    }
     setShowModal(true);
   };
 
@@ -500,18 +543,18 @@ export function PlansTab() {
               <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                   <div>
-                    <label className="form-label" htmlFor="p-client">Cliente *</label>
+                    <label className="form-label" htmlFor="p-client">Cliente con Diagnóstico *</label>
                     <select
                       id="p-client"
                       className="form-input"
                       required
                       value={formClientId}
-                      onChange={(e) => setFormClientId(e.target.value)}
+                      onChange={(e) => handleSelectClient(e.target.value)}
                     >
                       <option value="">Seleccionar cliente...</option>
-                      {clients.map((c) => (
+                      {sortedClients.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.name} ({c.sector})
+                          {c.name} — [{c.status === 'COMPLETED' ? 'Diagnóstico Completado' : c.status === 'IN_PROGRESS' ? 'En Progreso' : 'Enviado'}]{c.verticalName ? ` • ${c.verticalName}` : ''}
                         </option>
                       ))}
                     </select>

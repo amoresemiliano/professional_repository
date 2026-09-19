@@ -69,10 +69,18 @@ export function QuotesTab() {
     loadData();
   }, []);
 
+  const sortedClients = [...clients].sort((a, b) => {
+    if (a.status === 'COMPLETED' && b.status !== 'COMPLETED') return -1;
+    if (b.status === 'COMPLETED' && a.status !== 'COMPLETED') return 1;
+    if (a.status === 'IN_PROGRESS' && b.status !== 'IN_PROGRESS') return -1;
+    if (b.status === 'IN_PROGRESS' && a.status !== 'IN_PROGRESS') return 1;
+    return a.name.localeCompare(b.name);
+  });
+
   // Abrir Nuevo Presupuesto
   const handleOpenNew = () => {
     setEditingQuote(null);
-    setFormClientId(clients.length > 0 ? clients[0].id : '');
+    setFormClientId(sortedClients.length > 0 ? sortedClients[0].id : '');
     setFormTitle('Propuesta Comercial y Presupuesto Vegen');
     setFormStatus('DRAFT');
     setFormDiscountType('PERCENTAGE');
@@ -542,9 +550,9 @@ export function QuotesTab() {
                       onChange={(e) => setFormClientId(e.target.value)}
                     >
                       <option value="">Seleccionar cliente...</option>
-                      {clients.map((c) => (
+                      {sortedClients.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.name} ({c.sector})
+                          {c.name} — [{c.status === 'COMPLETED' ? 'Diagnóstico Completado' : c.status === 'IN_PROGRESS' ? 'En Progreso' : 'Enviado'}]{c.verticalName ? ` • ${c.verticalName}` : ''}
                         </option>
                       ))}
                     </select>
