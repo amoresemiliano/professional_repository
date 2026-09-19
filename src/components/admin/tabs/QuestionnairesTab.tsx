@@ -213,104 +213,126 @@ export function QuestionnairesTab({
           </div>
         </div>
 
-        {/* 1. Servicios y Respuestas */}
-        <Card style={{ marginBottom: 'var(--space-5)' }}>
-          <CardBody>
-            <h3 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--space-3)' }}>
-              1. Servicios Analizados ({services.length})
-            </h3>
-            {services.length === 0 ? (
-              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>No se registraron servicios aún.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                {services.map((s: any, idx: number) => (
-                  <div
-                    key={s.id || idx}
-                    style={{
-                      border: '1px solid var(--color-border-subtle)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: 'var(--space-4)',
-                      background: Boolean(Number(s.is_priority)) ? 'rgba(39, 176, 98, 0.04)' : 'transparent',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
-                      <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-bold)' }}>
-                        {s.name}
-                      </h4>
-                      {Boolean(Number(s.is_priority)) ? (
-                        <Badge variant="success">Servicio Prioritario</Badge>
-                      ) : (
-                        <Badge variant="neutral">Secundario</Badge>
-                      )}
-                    </div>
+        {/* 1. Servicios y Respuestas Relevantes / Prioritarios */}
+        {(() => {
+          const relevantServices = services.filter(
+            (s: any) => Boolean(Number(s.is_priority)) || s.client_problem || s.solution_actions || s.pricing_model || s.profitability_score !== null
+          );
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-3)', fontSize: 'var(--font-size-xs)', marginTop: 'var(--space-2)' }}>
-                      <div>
-                        <strong>Problema del cliente:</strong>
-                        <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>{s.client_problem || '—'}</p>
+          if (relevantServices.length === 0) return null;
+
+          return (
+            <Card style={{ marginBottom: 'var(--space-5)' }}>
+              <CardBody>
+                <h3 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--space-3)' }}>
+                  1. Servicios Prioritarios y Respuestas ({relevantServices.length})
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                  {relevantServices.map((s: any, idx: number) => (
+                    <div
+                      key={s.id || idx}
+                      style={{
+                        border: '1px solid var(--color-border-subtle)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: 'var(--space-4)',
+                        background: Boolean(Number(s.is_priority)) ? 'rgba(39, 176, 98, 0.04)' : 'transparent',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
+                        <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-bold)' }}>
+                          {s.name}
+                        </h4>
+                        {Boolean(Number(s.is_priority)) ? (
+                          <Badge variant="success">Servicio Prioritario</Badge>
+                        ) : (
+                          <Badge variant="neutral">Secundario</Badge>
+                        )}
                       </div>
-                      <div>
-                        <strong>Solución / Acciones:</strong>
-                        <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>{s.solution_actions || '—'}</p>
-                      </div>
-                      <div>
-                        <strong>Resultado esperado:</strong>
-                        <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>{s.expected_result || '—'}</p>
-                      </div>
-                      <div>
-                        <strong>Duración habitual:</strong>
-                        <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>{s.typical_duration || '—'}</p>
-                      </div>
-                      <div>
-                        <strong>Precios:</strong>
-                        <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                          {s.price_min && s.price_max ? `${s.price_min} - ${s.price_max} ${s.currency || 'EUR'}` : (s.pricing_model || '—')}
-                          {s.price_notes ? ` (${s.price_notes})` : ''}
-                        </p>
-                      </div>
-                      <div>
-                        <strong>Mercado:</strong>
-                        <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                          Posición: {s.market_position || '—'} {s.estimated_market_price ? `| Est: ${s.estimated_market_price}` : ''}
-                        </p>
-                      </div>
-                      <div>
-                        <strong>Rentabilidad:</strong>
-                        <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                          Score: {s.profitability_score !== null ? `${s.profitability_score} / 5` : '—'}
-                          {Boolean(Number(s.profitability_is_uncertain)) ? ' (Incierto)' : ''}
-                        </p>
-                      </div>
-                      <div>
-                        <strong>Facilidad operativa:</strong>
-                        <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                          Score: {s.operational_ease_score !== null ? `${s.operational_ease_score} / 5` : '—'}
-                          {s.operational_notes ? ` | Notas: ${s.operational_notes}` : ''}
-                        </p>
-                      </div>
-                      <div>
-                        <strong>Capacidad remota:</strong>
-                        <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                          {s.remote_capability || '—'} {s.remote_notes ? `(${s.remote_notes})` : ''}
-                        </p>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-3)', fontSize: 'var(--font-size-xs)', marginTop: 'var(--space-2)' }}>
+                        {s.client_problem && (
+                          <div>
+                            <strong>Problema del cliente:</strong>
+                            <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>{s.client_problem}</p>
+                          </div>
+                        )}
+                        {s.solution_actions && (
+                          <div>
+                            <strong>Solución / Acciones:</strong>
+                            <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>{s.solution_actions}</p>
+                          </div>
+                        )}
+                        {s.expected_result && (
+                          <div>
+                            <strong>Resultado esperado:</strong>
+                            <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>{s.expected_result}</p>
+                          </div>
+                        )}
+                        {s.typical_duration && (
+                          <div>
+                            <strong>Duración habitual:</strong>
+                            <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>{s.typical_duration}</p>
+                          </div>
+                        )}
+                        {(s.price_min || s.pricing_model) && (
+                          <div>
+                            <strong>Precios:</strong>
+                            <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                              {s.price_min && s.price_max ? `${s.price_min} - ${s.price_max} ${s.currency || 'EUR'}` : (s.pricing_model || '—')}
+                              {s.price_notes ? ` (${s.price_notes})` : ''}
+                            </p>
+                          </div>
+                        )}
+                        {(s.market_position || s.estimated_market_price) && (
+                          <div>
+                            <strong>Mercado:</strong>
+                            <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                              Posición: {s.market_position || '—'} {s.estimated_market_price ? `| Est: ${s.estimated_market_price}` : ''}
+                            </p>
+                          </div>
+                        )}
+                        {s.profitability_score !== null && (
+                          <div>
+                            <strong>Rentabilidad:</strong>
+                            <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                              Score: {s.profitability_score} / 5
+                              {Boolean(Number(s.profitability_is_uncertain)) ? ' (Incierto)' : ''}
+                            </p>
+                          </div>
+                        )}
+                        {s.operational_ease_score !== null && (
+                          <div>
+                            <strong>Facilidad operativa:</strong>
+                            <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                              Score: {s.operational_ease_score} / 5
+                              {s.operational_notes ? ` | Notas: ${s.operational_notes}` : ''}
+                            </p>
+                          </div>
+                        )}
+                        {s.remote_capability && (
+                          <div>
+                            <strong>Capacidad remota:</strong>
+                            <p style={{ color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                              {s.remote_capability} {s.remote_notes ? `(${s.remote_notes})` : ''}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardBody>
-        </Card>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          );
+        })()}
 
-        {/* 2. Públicos Objetivo */}
-        <Card style={{ marginBottom: 'var(--space-5)' }}>
-          <CardBody>
-            <h3 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--space-3)' }}>
-              2. Públicos Objetivo ({audiences.length})
-            </h3>
-            {audiences.length === 0 ? (
-              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>No se registraron públicos objetivo.</p>
-            ) : (
+        {/* 2. Públicos Objetivo (Sólo si existen) */}
+        {audiences.length > 0 && (
+          <Card style={{ marginBottom: 'var(--space-5)' }}>
+            <CardBody>
+              <h3 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--space-3)' }}>
+                2. Públicos Objetivo ({audiences.length})
+              </h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
                 {audiences.map((aud: any, idx: number) => (
                   <Badge key={aud.id || idx} variant={aud.priority === 'high' ? 'success' : 'neutral'}>
@@ -318,19 +340,17 @@ export function QuestionnairesTab({
                   </Badge>
                 ))}
               </div>
-            )}
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        )}
 
-        {/* 3. Diferenciales */}
-        <Card style={{ marginBottom: 'var(--space-5)' }}>
-          <CardBody>
-            <h3 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--space-3)' }}>
-              3. Diferenciales Competitivos ({differentials.length})
-            </h3>
-            {differentials.length === 0 ? (
-              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>No se registraron diferenciales.</p>
-            ) : (
+        {/* 3. Diferenciales (Sólo si existen) */}
+        {differentials.length > 0 && (
+          <Card style={{ marginBottom: 'var(--space-5)' }}>
+            <CardBody>
+              <h3 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--space-3)' }}>
+                3. Diferenciales Competitivos ({differentials.length})
+              </h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
                 {differentials.map((diff: any, idx: number) => (
                   <Badge key={diff.id || idx} variant="success">
@@ -338,21 +358,23 @@ export function QuestionnairesTab({
                   </Badge>
                 ))}
               </div>
-            )}
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        )}
 
-        {/* 4. Pitch Final */}
-        <Card>
-          <CardBody>
-            <h3 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--space-3)' }}>
-              4. Pitch Final / Propuesta de Valor
-            </h3>
-            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', whiteSpace: 'pre-wrap' }}>
-              {q.final_pitch || 'Sin pitch final registrado.'}
-            </p>
-          </CardBody>
-        </Card>
+        {/* 4. Pitch Final (Sólo si existe) */}
+        {q.final_pitch && q.final_pitch.trim() !== '' && (
+          <Card>
+            <CardBody>
+              <h3 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--space-3)' }}>
+                4. Pitch Final / Propuesta de Valor
+              </h3>
+              <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', whiteSpace: 'pre-wrap' }}>
+                {q.final_pitch}
+              </p>
+            </CardBody>
+          </Card>
+        )}
       </div>
     );
   }

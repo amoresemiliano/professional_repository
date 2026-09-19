@@ -7,7 +7,7 @@ import { IconUsers, IconFileText, IconStar, IconPlus, IconExternalLink } from '.
 interface OverviewTabProps {
   clients: ClientItem[];
   clientName: string;
-  onNavigateToTab: (tab: 'overview' | 'clients' | 'questionnaires' | 'comparison' | 'matrix' | 'scoring-config' | 'security', filter?: string) => void;
+  onNavigateToTab: (tab: any, filter?: string) => void;
   onOpenNewClientModal: () => void;
   onViewClient?: () => void;
 }

@@ -18,7 +18,7 @@ export interface QuestionnaireState {
 
 export function getInitialQuestionnaireState(): QuestionnaireState {
   return {
-    services: INITIAL_SERVICES.map((s) => ({ ...s })),
+    services: [],
     answers: {},
     audiences: [],
     differentials: [],

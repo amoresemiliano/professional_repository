@@ -541,7 +541,7 @@ export function QuestionnaireView({
 
         {currentStep === 6 && (
           <Step6Rentabilidad
-            services={services}
+            priorityServices={priorityServices}
             answers={answers}
             onUpdateAnswer={handleUpdateAnswer}
           />
@@ -583,7 +583,7 @@ export function QuestionnaireView({
 
         {currentStep === 11 && (
           <Step11Resumen
-            services={services}
+            priorityServices={priorityServices}
             audiences={audiences}
             differentials={differentials}
             customDifferentialText={customDifferentialText}

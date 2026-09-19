@@ -106,6 +106,95 @@ if (preg_match('#^/api/admin/questionnaires/([a-zA-Z0-9_-]+)$#', $path, $matches
     }
 }
 
+// --- ADMIN VERTICALS ---
+if ($path === '/api/admin/verticals') {
+    if ($method === 'GET') {
+        AdminController::getVerticals();
+    } elseif ($method === 'POST') {
+        AdminController::createVertical();
+    }
+}
+
+if (preg_match('#^/api/admin/verticals/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
+    if ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
+        AdminController::updateVertical($matches[1]);
+    } elseif ($method === 'DELETE') {
+        AdminController::archiveVertical($matches[1]);
+    }
+}
+
+// --- ADMIN CATALOG SERVICES ---
+if ($path === '/api/admin/catalog-services') {
+    if ($method === 'GET') {
+        AdminController::getCatalogServices();
+    } elseif ($method === 'POST') {
+        AdminController::createCatalogService();
+    }
+}
+
+if (preg_match('#^/api/admin/catalog-services/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
+    if ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
+        AdminController::updateCatalogService($matches[1]);
+    } elseif ($method === 'DELETE') {
+        AdminController::archiveCatalogService($matches[1]);
+    }
+}
+
+// --- ADMIN STRATEGIC PLANS ---
+if ($path === '/api/admin/strategic-plans') {
+    if ($method === 'GET') {
+        AdminController::getStrategicPlans();
+    } elseif ($method === 'POST') {
+        AdminController::createStrategicPlan();
+    }
+}
+
+if (preg_match('#^/api/admin/strategic-plans/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
+    if ($method === 'GET') {
+        AdminController::getStrategicPlanDetail($matches[1]);
+    } elseif ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
+        AdminController::updateStrategicPlan($matches[1]);
+    } elseif ($method === 'DELETE') {
+        AdminController::archiveStrategicPlan($matches[1]);
+    }
+}
+
+// --- ADMIN VEGEN SERVICES (CATALOG) ---
+if ($path === '/api/admin/vegen-services') {
+    if ($method === 'GET') {
+        AdminController::getVegenServices();
+    } elseif ($method === 'POST') {
+        AdminController::createVegenService();
+    }
+}
+
+if (preg_match('#^/api/admin/vegen-services/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
+    if ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
+        AdminController::updateVegenService($matches[1]);
+    } elseif ($method === 'DELETE') {
+        AdminController::archiveVegenService($matches[1]);
+    }
+}
+
+// --- ADMIN QUOTES (PRESUPUESTOS) ---
+if ($path === '/api/admin/quotes') {
+    if ($method === 'GET') {
+        AdminController::getQuotes();
+    } elseif ($method === 'POST') {
+        AdminController::createQuote();
+    }
+}
+
+if (preg_match('#^/api/admin/quotes/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
+    if ($method === 'GET') {
+        AdminController::getQuoteDetail($matches[1]);
+    } elseif ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
+        AdminController::updateQuote($matches[1]);
+    } elseif ($method === 'DELETE') {
+        AdminController::archiveQuote($matches[1]);
+    }
+}
+
 // --- PUBLIC QUESTIONNAIRES (TOKEN) ---
 if (preg_match('#^/api/q/([a-zA-Z0-9_-]+)/submit$#', $path, $matches)) {
     if ($method === 'POST') {

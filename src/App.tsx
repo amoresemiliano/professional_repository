@@ -51,6 +51,8 @@ export default function App() {
         <Header
           mode={currentMode}
           onToggleMode={handleToggleMode}
+          onLogout={handleAdminLogout}
+          isAdminAuthenticated={isAdminAuthenticated}
           clientName={client.name}
           autosaveStatus={autosaveStatus}
         />

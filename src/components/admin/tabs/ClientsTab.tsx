@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ClientItem } from '../../../types';
 import { adminService } from '../../../services/adminService';
 import { Badge } from '../../common/Badge';
@@ -30,6 +30,7 @@ export function ClientsTab({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Formulario de edición
+  const [verticals, setVerticals] = useState<any[]>([]);
   const [editForm, setEditForm] = useState({
     name: '',
     sector: '',
@@ -38,7 +39,12 @@ export function ClientsTab({
     contactEmail: '',
     contactPhone: '',
     notes: '',
+    verticalId: '',
   });
+
+  useEffect(() => {
+    adminService.getVerticalsAsync().then((list) => setVerticals(list)).catch(() => {});
+  }, []);
 
   const getStatusBadge = (status: ClientItem['status']) => {
     switch (status) {
@@ -78,6 +84,7 @@ export function ClientsTab({
       contactEmail: client.contactEmail || '',
       contactPhone: client.contactPhone || '',
       notes: client.notes || '',
+      verticalId: (client as any).vertical_id || client.verticalId || '',
     });
     setErrorMsg(null);
   };
@@ -542,6 +549,23 @@ export function ClientsTab({
                     value={editForm.name}
                     onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                   />
+                </div>
+
+                <div>
+                  <label className="form-label" htmlFor="edit-vertical">Vertical de Negocio / Pool de Servicios</label>
+                  <select
+                    id="edit-vertical"
+                    className="form-input"
+                    value={editForm.verticalId}
+                    onChange={(e) => setEditForm({ ...editForm, verticalId: e.target.value })}
+                  >
+                    <option value="">Sin vertical asignada</option>
+                    {verticals.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>

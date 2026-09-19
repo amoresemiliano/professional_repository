@@ -1,17 +1,14 @@
 import { useState, useEffect } from 'react';
 import { ClientItem } from '../../types';
 import { adminService, ComparisonServiceRow } from '../../services/adminService';
-import { authService } from '../../services/authService';
-import { Button } from '../common/Button';
 import { OverviewTab } from './tabs/OverviewTab';
 import { ClientsTab } from './tabs/ClientsTab';
-import { ComparisonTab } from './tabs/ComparisonTab';
-import { MatrixTab } from './tabs/MatrixTab';
-import { ScoringConfigTab } from './tabs/ScoringConfigTab';
 import { QuestionnairesTab } from './tabs/QuestionnairesTab';
-import { SecurityTab } from './tabs/SecurityTab';
+import { MatrixTab } from './tabs/MatrixTab';
+import { PlansTab } from './tabs/PlansTab';
+import { QuotesTab } from './tabs/QuotesTab';
+import { SettingsTab } from './tabs/SettingsTab';
 import { NewClientModal } from './NewClientModal';
-import { IconExternalLink, IconLogOut } from '../common/Icons';
 
 interface AdminViewProps {
   clientName?: string;
@@ -19,16 +16,16 @@ interface AdminViewProps {
   onLogout?: () => void;
 }
 
+export type AdminTabType = 'overview' | 'clients' | 'questionnaires' | 'matrix' | 'plans' | 'quotes' | 'settings';
+
 export function AdminView({
   clientName = '',
   onViewClient,
-  onLogout,
 }: AdminViewProps = {}) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'questionnaires' | 'comparison' | 'matrix' | 'scoring-config' | 'security'>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTabType>('overview');
   const [questionnairesFilter, setQuestionnairesFilter] = useState<string>('ALL');
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Clientes cargados desde adminService
   const [clients, setClients] = useState<ClientItem[]>(adminService.getClients());
@@ -61,6 +58,7 @@ export function AdminView({
     sector: string;
     contactName: string;
     contactEmail: string;
+    verticalId?: string | null;
   }) => {
     try {
       setErrorMsg(null);
@@ -73,12 +71,7 @@ export function AdminView({
     }
   };
 
-  const handleLogout = async () => {
-    await authService.logout();
-    onLogout?.();
-  };
-
-  const handleNavigateFromOverview = (tab: typeof activeTab, filter?: string) => {
+  const handleNavigateFromOverview = (tab: AdminTabType, filter?: string) => {
     if (filter) {
       setQuestionnairesFilter(filter);
     } else {
@@ -87,18 +80,19 @@ export function AdminView({
     setActiveTab(tab);
   };
 
-  const navItems = [
+  const navItems: Array<{ id: AdminTabType; label: string }> = [
     { id: 'overview', label: 'Resumen' },
     { id: 'clients', label: 'Clientes' },
     { id: 'questionnaires', label: 'Diagnósticos' },
     { id: 'matrix', label: 'Matriz' },
-    { id: 'scoring-config', label: 'Scoring' },
-    { id: 'security', label: 'Seguridad' },
+    { id: 'plans', label: 'Plan Estratégico' },
+    { id: 'quotes', label: 'Presupuestos' },
+    { id: 'settings', label: 'Configuración' },
   ];
 
   return (
     <div className="container container-wide" style={{ padding: 'var(--space-5) var(--space-4)', maxWidth: '1280px', margin: '0 auto' }}>
-      {/* Barra de Navegación del Panel de Administración */}
+      {/* Barra de Navegación Principal del Panel */}
       <header
         className="admin-header-nav"
         style={{
@@ -112,9 +106,8 @@ export function AdminView({
           paddingBottom: 'var(--space-3)',
         }}
       >
-        {/* Lado Izquierdo: Pestañas Principales */}
+        {/* Pestañas Principales */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-          {/* Brand Badge */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginRight: 'var(--space-2)' }}>
             <span style={{ fontWeight: 'var(--font-weight-bold)', color: 'var(--color-brand)', fontSize: 'var(--font-size-base)', letterSpacing: '-0.02em' }}>
               Vegen
@@ -124,7 +117,6 @@ export function AdminView({
             </span>
           </div>
 
-          {/* Navegación Desktop */}
           <nav
             className="admin-desktop-tabs"
             style={{
@@ -146,7 +138,7 @@ export function AdminView({
                   fontWeight: activeTab === tab.id ? 'var(--font-weight-semibold)' : 'var(--font-weight-medium)',
                 }}
                 onClick={() => {
-                  setActiveTab(tab.id as typeof activeTab);
+                  setActiveTab(tab.id);
                   if (tab.id === 'questionnaires') {
                     setQuestionnairesFilter('ALL');
                   }
@@ -156,39 +148,7 @@ export function AdminView({
                 {tab.label}
               </button>
             ))}
-
-            {/* Espacio conceptual para futuras fases (Planes, Presupuestos) */}
-            <span
-              title="Próximamente en Fase 4"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '0.35rem 0.5rem',
-                fontSize: '11px',
-                color: 'var(--color-text-tertiary)',
-                cursor: 'default',
-                opacity: 0.6,
-              }}
-            >
-              Planes (F4)
-            </span>
           </nav>
-        </div>
-
-        {/* Lado Derecho: Acciones Secundarias */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-          {onViewClient && (
-            <Button variant="secondary" size="sm" onClick={onViewClient} title="Abrir vista de cuestionario público">
-              <IconExternalLink size={14} />
-              <span>Vista Formulario</span>
-            </Button>
-          )}
-          {onLogout && (
-            <Button variant="ghost" size="sm" onClick={handleLogout} title="Cerrar sesión de administrador">
-              <IconLogOut size={14} />
-              <span>Cerrar sesión</span>
-            </Button>
-          )}
         </div>
       </header>
 
@@ -204,7 +164,7 @@ export function AdminView({
           <OverviewTab
             clients={clients}
             clientName={clientName}
-            onNavigateToTab={handleNavigateFromOverview}
+            onNavigateToTab={(tab, filter) => handleNavigateFromOverview(tab as AdminTabType, filter)}
             onOpenNewClientModal={() => setShowNewClientModal(true)}
             onViewClient={onViewClient}
           />
@@ -227,27 +187,24 @@ export function AdminView({
           />
         )}
 
-        {activeTab === 'comparison' && (
-          <ComparisonTab
-            services={comparisonServices}
-            clientName={clientName}
-          />
-        )}
-
         {activeTab === 'matrix' && (
           <MatrixTab services={comparisonServices} />
         )}
 
-        {activeTab === 'scoring-config' && (
-          <ScoringConfigTab />
+        {activeTab === 'plans' && (
+          <PlansTab />
         )}
 
-        {activeTab === 'security' && (
-          <SecurityTab />
+        {activeTab === 'quotes' && (
+          <QuotesTab />
+        )}
+
+        {activeTab === 'settings' && (
+          <SettingsTab />
         )}
       </main>
 
-      {/* Modal Desacoplado para Crear Nuevo Cliente */}
+      {/* Modal para Crear Nuevo Cliente */}
       <NewClientModal
         isOpen={showNewClientModal}
         onClose={() => setShowNewClientModal(false)}
