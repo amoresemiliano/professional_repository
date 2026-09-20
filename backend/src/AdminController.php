@@ -187,20 +187,13 @@ class AdminController
         $name = trim((string)($input['name'] ?? ''));
         $sector = trim((string)($input['professional_sector'] ?? ($input['sector'] ?? '')));
         $country = trim((string)($input['country'] ?? 'España'));
-        $contactName = trim((string)($input['contact_name'] ?? ($input['contactName'] ?? '')));
-        $contactEmail = trim((string)($input['contact_email'] ?? ($input['contactEmail'] ?? '')));
-        $contactPhone = trim((string)($input['contact_phone'] ?? ($input['contactPhone'] ?? '')));
         $notes = trim((string)($input['notes'] ?? ''));
         $verticalId = array_key_exists('vertical_id', $input) 
             ? (!empty($input['vertical_id']) ? trim((string)$input['vertical_id']) : null)
             : $client['vertical_id'];
 
-        if ($name === '' || $sector === '' || $contactName === '' || $contactEmail === '') {
-            Response::error('VALIDATION_ERROR', 'Los campos nombre, sector, contacto y correo electrónico son obligatorios.', 422);
-        }
-
-        if (!filter_var($contactEmail, FILTER_VALIDATE_EMAIL)) {
-            Response::error('INVALID_EMAIL', 'El formato del correo electrónico de contacto es inválido.', 422);
+        if ($name === '' || $sector === '') {
+            Response::error('VALIDATION_ERROR', 'Los campos nombre y sector son obligatorios.', 422);
         }
 
         $upd = $pdo->prepare("
@@ -210,9 +203,6 @@ class AdminController
                 vertical_id = :vertical_id,
                 professional_sector = :sector,
                 country = :country,
-                contact_name = :c_name,
-                contact_email = :c_email,
-                contact_phone = :c_phone,
                 notes = :notes,
                 updated_at = NOW()
             WHERE id = :id AND organization_id = :org_id
@@ -224,9 +214,6 @@ class AdminController
             ':name'        => $name,
             ':sector'      => $sector,
             ':country'     => $country,
-            ':c_name'      => $contactName,
-            ':c_email'     => $contactEmail,
-            ':c_phone'     => $contactPhone !== '' ? $contactPhone : null,
             ':notes'       => $notes !== '' ? $notes : null,
         ]);
 
