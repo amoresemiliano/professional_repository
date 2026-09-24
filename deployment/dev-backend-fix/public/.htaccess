@@ -1,0 +1,27 @@
+# =====================================================================
+# VEGEN DIGITAL — SEGURIDAD APACHE (public_html/.../dev/api/)
+# =====================================================================
+
+# Desactivar listado de directorios
+Options -Indexes
+
+# Bloquear acceso a archivos sensibles o de configuración
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|sql|bak|env|example)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Cabeceras de seguridad HTTP
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Enrutamiento hacia index.php
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
