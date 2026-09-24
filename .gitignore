@@ -14,6 +14,8 @@ backend/config/production.php
 backend/local/
 backend/logs/*.log
 backend/storage/
-vegen_professional/
 *.sql.bak
+scratch/
 
+backup_*.sql
+deployment/*.zip

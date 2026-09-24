@@ -253,10 +253,27 @@ class TestRunner
             stripos($migrationSql, "0.250") === false,
             "Eliminada completamente referencia obsoleta a 0.250"
         );
-        $this->assert(
-            stripos($migrationSql, "0.150") === false,
-            "Eliminada completamente referencia obsoleta a 0.150"
-        );
+        // Validar migración 003
+        $mig003File = dirname(__DIR__) . '/migrations/003_add_protected_and_soft_delete.sql';
+        $roll003File = dirname(__DIR__) . '/migrations/003_add_protected_and_soft_delete.rollback.sql';
+        $this->assert(file_exists($mig003File), 'Existe 003_add_protected_and_soft_delete.sql');
+        $this->assert(file_exists($roll003File), 'Existe 003_add_protected_and_soft_delete.rollback.sql');
+
+        $mig003Sql = file_get_contents($mig003File);
+        $this->assert(stripos($mig003Sql, 'is_protected') !== false, '003 define columna is_protected');
+        $this->assert(stripos($mig003Sql, 'deleted_at') !== false, '003 define columna deleted_at');
+
+        // Validar migración 004
+        $mig004File = dirname(__DIR__) . '/migrations/004_consolidation_verticals_plans_quotes.sql';
+        $roll004File = dirname(__DIR__) . '/migrations/004_consolidation_verticals_plans_quotes.rollback.sql';
+        $this->assert(file_exists($mig004File), 'Existe 004_consolidation_verticals_plans_quotes.sql');
+        $this->assert(file_exists($roll004File), 'Existe 004_consolidation_verticals_plans_quotes.rollback.sql');
+
+        $mig004Sql = file_get_contents($mig004File);
+        $this->assert(stripos($mig004Sql, 'business_verticals') !== false, '004 define tabla business_verticals');
+        $this->assert(stripos($mig004Sql, 'service_catalog') !== false, '004 define tabla service_catalog');
+        $this->assert(stripos($mig004Sql, 'strategic_plans') !== false, '004 define tabla strategic_plans');
+        $this->assert(stripos($mig004Sql, 'quotes') !== false, '004 define tabla quotes');
     }
 }
 

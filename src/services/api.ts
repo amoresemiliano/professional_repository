@@ -5,7 +5,7 @@
 
 const getApiBaseUrl = (): string => {
   const envUrl = (import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL;
-  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '' && !envUrl.includes('vegendigital.com')) {
     return envUrl.replace(/\/+$/, '');
   }
   return '/api';
