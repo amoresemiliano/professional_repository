@@ -29,7 +29,7 @@ export function AdminView({
 
   // Clientes cargados desde adminService
   const [clients, setClients] = useState<ClientItem[]>(adminService.getClients());
-  const [comparisonServices] = useState<ComparisonServiceRow[]>(adminService.getComparisonServices());
+  const [comparisonServices, setComparisonServices] = useState<ComparisonServiceRow[]>([]);
   const [showNewClientModal, setShowNewClientModal] = useState(false);
 
   const loadClients = async () => {
@@ -42,9 +42,24 @@ export function AdminView({
     }
   };
 
+  const loadMatrixServices = async () => {
+    try {
+      const services = await adminService.fetchMatrixServices();
+      setComparisonServices(services);
+    } catch {
+      // Silencioso
+    }
+  };
+
   useEffect(() => {
     loadClients();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'matrix') {
+      loadMatrixServices();
+    }
+  }, [activeTab]);
 
   const handleCopyLink = (token: string) => {
     const fullUrl = `${window.location.origin}/q/${token}`;

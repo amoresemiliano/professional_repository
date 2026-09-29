@@ -586,6 +586,15 @@ class AdminService {
     }
   }
 
+  public async fetchMatrixServices(clientId?: string): Promise<ComparisonServiceRow[]> {
+    const url = clientId ? `/admin/matrix?client_id=${encodeURIComponent(clientId)}` : '/admin/matrix';
+    const res = await apiRequest<ComparisonServiceRow[]>(url, { method: 'GET' });
+    if (res.success && Array.isArray(res.data)) {
+      return res.data;
+    }
+    return [];
+  }
+
   public getComparisonServices(): ComparisonServiceRow[] {
     return [];
   }

@@ -158,6 +158,10 @@ if (preg_match('#^/api/admin/(?:catalog-services|vertical-services)/([a-zA-Z0-9_
 }
 
 // --- ADMIN STRATEGIC PLANS ---
+if ($path === '/api/admin/matrix' && $method === 'GET') {
+    AdminController::getMatrix();
+}
+
 if ($path === '/api/admin/strategic-plans') {
     if ($method === 'GET') {
         AdminController::getStrategicPlans();

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ServiceItem } from '../../../types';
-import { DEFAULT_SERVICES } from '../../../config/defaults';
 import { Button } from '../../common/Button';
 import { Card, CardBody } from '../../common/Card';
 import { ChoiceCard } from '../../common/ChoiceCard';

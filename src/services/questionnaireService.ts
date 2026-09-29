@@ -4,7 +4,6 @@
  */
 
 import { ServiceItem, ServiceAnswerItem, TargetAudienceItem } from '../types';
-import { INITIAL_SERVICES } from '../config/defaults';
 import { apiRequest } from './api';
 
 export interface QuestionnaireState {

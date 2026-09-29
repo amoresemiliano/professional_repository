@@ -1,43 +1,4 @@
-import { ServiceItem, TargetAudienceItem } from '../types';
-
-export const DEFAULT_SERVICES = [
-  'Extranjería',
-  'Visados / residencia',
-  'Nacionalidad',
-  'Constitución de empresas',
-  'Asesoramiento a emprendedores',
-  'Derecho laboral',
-  'Derecho civil',
-  'Contratos',
-];
-
-export const INITIAL_SERVICES: ServiceItem[] = [
-  {
-    id: 's1',
-    name: 'Visados y Autorizaciones de Residencia',
-    isPriority: true,
-  },
-  {
-    id: 's2',
-    name: 'Nacionalidad Española por Residencia',
-    isPriority: true,
-  },
-  {
-    id: 's3',
-    name: 'Arraigo y Regularización Extraordinaria',
-    isPriority: true,
-  },
-  {
-    id: 's4',
-    name: 'Recursos Contencioso-Administrativos',
-    isPriority: false,
-  },
-  {
-    id: 's5',
-    name: 'Constitución de Sociedades para Extranjeros',
-    isPriority: false,
-  },
-];
+import { TargetAudienceItem } from '../types';
 
 export const OPERATIONAL_ISSUES_OPTIONS = [
   { id: 'docs', label: 'Muchos documentos' },

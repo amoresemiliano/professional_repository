@@ -602,7 +602,10 @@ export function QuestionnaireView({
             onPrev={handlePrev}
             onNext={handleNext}
             onSubmit={handleSubmit}
-            isNextDisabled={currentStep === 2 && priorityServices.length === 0}
+            isNextDisabled={
+              currentStep === 2 &&
+              (priorityServices.length < Math.min(3, services.length) || priorityServices.length > 5)
+            }
             submitting={isSubmitting}
           />
         )}

@@ -1175,6 +1175,10 @@ class AdminController
         $input = self::getJsonBody();
 
         $name = trim((string)($input['name'] ?? ''));
+        $category = trim((string)($input['category'] ?? 'General'));
+        if ($category === '') {
+            $category = 'General';
+        }
         $description = trim((string)($input['description'] ?? ''));
         $basePrice = (float)($input['base_price'] ?? 0.00);
         $currency = trim((string)($input['currency'] ?? 'EUR'));
@@ -1188,13 +1192,14 @@ class AdminController
         $id = Token::generateUuid();
 
         $stmt = $pdo->prepare("
-            INSERT INTO vegen_service_catalog (id, organization_id, name, description, base_price, currency, is_active, created_at, updated_at)
-            VALUES (:id, :org_id, :name, :desc, :price, :curr, :is_active, NOW(), NOW())
+            INSERT INTO vegen_service_catalog (id, organization_id, name, category, description, base_price, currency, is_active, created_at, updated_at)
+            VALUES (:id, :org_id, :name, :category, :desc, :price, :curr, :is_active, NOW(), NOW())
         ");
         $stmt->execute([
             ':id'        => $id,
             ':org_id'    => $admin['organization_id'],
             ':name'      => $name,
+            ':category'  => $category,
             ':desc'      => $description !== '' ? $description : null,
             ':price'     => $basePrice,
             ':curr'      => $currency,
@@ -1204,6 +1209,7 @@ class AdminController
         Response::success([
             'id'          => $id,
             'name'        => $name,
+            'category'    => $category,
             'description' => $description,
             'base_price'  => $basePrice,
             'currency'    => $currency,
@@ -1229,6 +1235,10 @@ class AdminController
 
         $input = self::getJsonBody();
         $name = trim((string)($input['name'] ?? $service['name']));
+        $category = array_key_exists('category', $input) ? trim((string)$input['category']) : ($service['category'] ?? 'General');
+        if ($category === '') {
+            $category = 'General';
+        }
         $description = array_key_exists('description', $input) ? trim((string)$input['description']) : $service['description'];
         $basePrice = isset($input['base_price']) ? (float)$input['base_price'] : (float)$service['base_price'];
         $currency = trim((string)($input['currency'] ?? $service['currency']));
@@ -1240,11 +1250,12 @@ class AdminController
 
         $upd = $pdo->prepare("
             UPDATE vegen_service_catalog
-            SET name = :name, description = :desc, base_price = :price, currency = :curr, is_active = :is_active, updated_at = NOW()
+            SET name = :name, category = :category, description = :desc, base_price = :price, currency = :curr, is_active = :is_active, updated_at = NOW()
             WHERE id = :id AND organization_id = :org_id
         ");
         $upd->execute([
             ':name'      => $name,
+            ':category'  => $category,
             ':desc'      => $description !== '' ? $description : null,
             ':price'     => $basePrice,
             ':curr'      => $currency,
@@ -1582,6 +1593,100 @@ class AdminController
         $upd->execute([':id' => $id, ':org_id' => $admin['organization_id']]);
 
         Response::success(['archived' => true, 'id' => $id]);
+    }
+
+    /**
+     * GET /api/admin/matrix
+     */
+    public static function getMatrix(): void
+    {
+        $admin = Auth::requireAdmin();
+        $pdo = Database::getConnection();
+
+        $clientId = !empty($_GET['client_id']) ? trim((string)$_GET['client_id']) : null;
+
+        $sql = "
+            SELECT 
+                s.name,
+                s.is_priority,
+                a.price_min,
+                a.price_max,
+                a.currency,
+                a.market_position,
+                a.profitability_score,
+                a.operational_ease_score,
+                a.remote_capability
+            FROM services s
+            JOIN questionnaires q ON q.id = s.questionnaire_id
+            LEFT JOIN service_answers a ON a.service_id = s.id
+            WHERE q.organization_id = :org_id
+              AND q.deleted_at IS NULL
+        ";
+        $params = [':org_id' => $admin['organization_id']];
+
+        if ($clientId) {
+            $sql .= " AND q.client_id = :client_id";
+            $params[':client_id'] = $clientId;
+        }
+
+        $sql .= " ORDER BY s.is_priority DESC, s.created_at ASC";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        $remoteMap = ['full_remote' => 100, 'hybrid' => 60, 'in_person' => 20];
+        $marketMap = ['above_market' => 100, 'at_market' => 60, 'below_market' => 30];
+
+        $comparisonServices = [];
+        foreach ($rows as $row) {
+            $isPriority = (bool)(int)$row['is_priority'];
+            $priorityVal = $isPriority ? 100 : 0;
+
+            $profScore = $row['profitability_score'] !== null ? (float)$row['profitability_score'] : 3.0;
+            $profVal = min(100, max(0, ($profScore - 1) * 25));
+
+            $easeScore = $row['operational_ease_score'] !== null ? (float)$row['operational_ease_score'] : 3.0;
+            $easeVal = min(100, max(0, ($easeScore - 1) * 25));
+
+            $remoteCap = $row['remote_capability'] ?? 'hybrid';
+            $remoteVal = $remoteMap[$remoteCap] ?? 50;
+
+            $marketPos = $row['market_position'] ?? 'at_market';
+            $marketVal = $marketMap[$marketPos] ?? 50;
+
+            // Priority 20%, Profitability 30%, Operational Ease 20%, Remote 20%, Market Position 10%
+            $score = round($priorityVal * 0.20 + $profVal * 0.30 + $easeVal * 0.20 + $remoteVal * 0.20 + $marketVal * 0.10, 1);
+            $x = round($easeVal * 0.50 + $remoteVal * 0.50, 1);
+            $y = round($profVal, 1);
+
+            $priceStr = 'N/A';
+            if ($row['price_min'] !== null || $row['price_max'] !== null) {
+                $curr = $row['currency'] ?? 'EUR';
+                if ($row['price_min'] !== null && $row['price_max'] !== null) {
+                    $priceStr = $row['price_min'] . ' - ' . $row['price_max'] . ' ' . $curr;
+                } elseif ($row['price_min'] !== null) {
+                    $priceStr = 'Desde ' . $row['price_min'] . ' ' . $curr;
+                } else {
+                    $priceStr = 'Hasta ' . $row['price_max'] . ' ' . $curr;
+                }
+            }
+
+            $comparisonServices[] = [
+                'name'          => $row['name'],
+                'isPriority'    => $isPriority,
+                'price'         => $priceStr,
+                'market'        => $marketPos,
+                'profitability' => ($row['profitability_score'] ?? '3') . '/5',
+                'ease'          => ($row['operational_ease_score'] ?? '3') . '/5',
+                'remote'        => $remoteCap,
+                'score'         => $score,
+                'x'             => $x,
+                'y'             => $y,
+            ];
+        }
+
+        Response::success($comparisonServices);
     }
 
     private static function getJsonBody(): array

@@ -17,3 +17,5 @@ backend/storage/
 *.sql.bak
 scratch/
 
+backup_*.sql
+deployment/*.zip
