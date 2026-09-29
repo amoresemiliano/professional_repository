@@ -6,7 +6,7 @@ import { Badge } from '../../common/Badge';
 import { IconCheck, IconStar, IconInfo } from '../../common/Icons';
 
 interface Step11ResumenProps {
-  services: ServiceItem[];
+  priorityServices: ServiceItem[];
   audiences: TargetAudienceItem[];
   differentials: string[];
   customDifferentialText: string;
@@ -17,7 +17,7 @@ interface Step11ResumenProps {
 }
 
 export function Step11Resumen({
-  services,
+  priorityServices,
   audiences,
   differentials,
   customDifferentialText,
@@ -26,6 +26,9 @@ export function Step11Resumen({
   onGoToStep,
   onResetSubmission,
 }: Step11ResumenProps) {
+  const hasAudiences = audiences.length > 0;
+  const hasDifferentials = differentials.length > 0 || (finalPitch && finalPitch.trim() !== '');
+
   return (
     <div>
       <header className="step-header">
@@ -68,108 +71,102 @@ export function Step11Resumen({
         </Card>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-          {/* Resumen de Servicios */}
-          <Card>
-            <CardHeader>
-              <h2 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)' }}>
-                Servicios y Prioridades ({services.length} en total)
-              </h2>
-              <Button variant="ghost" size="sm" onClick={() => onGoToStep(1)}>
-                Editar servicios
-              </Button>
-            </CardHeader>
-            <CardBody>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-                {services.map((s) => (
-                  <Badge
-                    key={s.id}
-                    variant={s.isPriority ? 'priority' : 'neutral'}
-                    icon={s.isPriority ? <IconStar size={12} filled /> : undefined}
-                  >
-                    {s.name}
-                  </Badge>
-                ))}
-              </div>
-            </CardBody>
-          </Card>
-
-          {/* Resumen de Públicos */}
-          <Card>
-            <CardHeader>
-              <h2 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)' }}>
-                Públicos Objetivo Prioritarios
-              </h2>
-              <Button variant="ghost" size="sm" onClick={() => onGoToStep(9)}>
-                Editar públicos
-              </Button>
-            </CardHeader>
-            <CardBody>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                {audiences.map((aud) => (
-                  <div
-                    key={aud.key}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      fontSize: 'var(--font-size-sm)',
-                    }}
-                  >
-                    <span>{aud.label}</span>
-                    <Badge variant={aud.priority === 'high' ? 'brand' : 'neutral'}>
-                      Prioridad {aud.priority === 'high' ? 'Alta' : 'Media'}
+          {/* Resumen de Servicios Prioritarios EXCLUSIVAMENTE */}
+          {priorityServices.length > 0 && (
+            <Card>
+              <CardHeader>
+                <h2 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)' }}>
+                  Servicios Prioritarios ({priorityServices.length} seleccionados)
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => onGoToStep(2)}>
+                  Editar prioritarios
+                </Button>
+              </CardHeader>
+              <CardBody>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                  {priorityServices.map((s) => (
+                    <Badge
+                      key={s.id}
+                      variant="priority"
+                      icon={<IconStar size={12} filled />}
+                    >
+                      {s.name}
                     </Badge>
-                  </div>
-                ))}
-                {audiences.length === 0 && (
-                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
-                    No se han seleccionado públicos objetivos todavía.
-                  </span>
-                )}
-              </div>
-            </CardBody>
-          </Card>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          )}
 
-          {/* Resumen de Diferenciales y Propuesta */}
-          <Card>
-            <CardHeader>
-              <h2 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)' }}>
-                Propuesta de Valor y Diferenciales
-              </h2>
-              <Button variant="ghost" size="sm" onClick={() => onGoToStep(10)}>
-                Editar propuesta
-              </Button>
-            </CardHeader>
-            <CardBody>
-              {finalPitch ? (
-                <p style={{ fontStyle: 'italic', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)' }}>
-                  &quot;{finalPitch}&quot;
-                </p>
-              ) : (
-                <p style={{ fontStyle: 'italic', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-3)', fontSize: 'var(--font-size-sm)' }}>
-                  No se ha introducido argumento diferenciador.
-                </p>
-              )}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-                {differentials.map((d) => {
-                  if (d === 'others') {
-                    return (
-                      <Badge key={d} variant="brand">
-                        {customDifferentialText.trim() ? `Otros: ${customDifferentialText.trim()}` : 'Otros'}
+          {/* Resumen de Públicos (Sólo si existen) */}
+          {hasAudiences && (
+            <Card>
+              <CardHeader>
+                <h2 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)' }}>
+                  Públicos Objetivo Prioritarios ({audiences.length})
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => onGoToStep(9)}>
+                  Editar públicos
+                </Button>
+              </CardHeader>
+              <CardBody>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                  {audiences.map((aud) => (
+                    <div
+                      key={aud.key}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: 'var(--font-size-sm)',
+                      }}
+                    >
+                      <span>{aud.label}</span>
+                      <Badge variant={aud.priority === 'high' ? 'brand' : 'neutral'}>
+                        Prioridad {aud.priority === 'high' ? 'Alta' : 'Media'}
                       </Badge>
-                    );
-                  }
-                  const opt = DIFFERENTIAL_OPTIONS.find((o) => o.id === d);
-                  return <Badge key={d} variant="brand">{opt ? opt.label : d}</Badge>;
-                })}
-                {differentials.length === 0 && (
-                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
-                    No se han seleccionado diferenciales.
-                  </span>
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Resumen de Diferenciales y Propuesta (Sólo si existen) */}
+          {hasDifferentials && (
+            <Card>
+              <CardHeader>
+                <h2 style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)' }}>
+                  Propuesta de Valor y Diferenciales
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => onGoToStep(10)}>
+                  Editar propuesta
+                </Button>
+              </CardHeader>
+              <CardBody>
+                {finalPitch && finalPitch.trim() !== '' && (
+                  <p style={{ fontStyle: 'italic', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)' }}>
+                    &quot;{finalPitch}&quot;
+                  </p>
                 )}
-              </div>
-            </CardBody>
-          </Card>
+                {differentials.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                    {differentials.map((d) => {
+                      if (d === 'others') {
+                        return (
+                          <Badge key={d} variant="brand">
+                            {customDifferentialText.trim() ? `Otros: ${customDifferentialText.trim()}` : 'Otros'}
+                          </Badge>
+                        );
+                      }
+                      const opt = DIFFERENTIAL_OPTIONS.find((o) => o.id === d);
+                      return <Badge key={d} variant="brand">{opt ? opt.label : d}</Badge>;
+                    })}
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          )}
 
           <div
             style={{

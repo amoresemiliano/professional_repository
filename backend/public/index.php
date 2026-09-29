@@ -15,23 +15,28 @@ use Vegen\Core\AuthController;
 use Vegen\Core\AdminController;
 use Vegen\Core\QuestionnaireController;
 
-// 2. Determinar método y URI
+// 2. Determinar método y URI con soporte para Method Override
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+if (isset($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'])) {
+    $method = strtoupper($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']);
+}
+
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $parsedPath = parse_url($requestUri, PHP_URL_PATH) ?? '/';
 
 // 3. Normalizar la ruta eliminando prefijos de subdirectorios de servidor
-// Ej: /vegendigital/sistemas/professional_repository/dev/api/health -> /api/health
-// O en local: /api/health
 $path = '/' . ltrim($parsedPath, '/');
 
-// Si la ruta contiene /api/, extraer desde /api/
 if (strpos($path, '/api/') !== false) {
     $path = substr($path, strpos($path, '/api/'));
 } elseif (str_ends_with($path, '/api')) {
     $path = '/api';
 } elseif ($path === '/health' || str_ends_with($path, '/health')) {
     $path = '/api/health';
+}
+
+if (strlen($path) > 1 && str_ends_with($path, '/')) {
+    $path = rtrim($path, '/');
 }
 
 // 4. Despacho de rutas
@@ -68,9 +73,19 @@ if ($path === '/api/admin/clients') {
     }
 }
 
+if (preg_match('#^/api/admin/clients/([a-zA-Z0-9_-]+)/archive$#', $path, $matches)) {
+    if ($method === 'POST' || $method === 'DELETE') {
+        AdminController::archiveClient($matches[1]);
+    }
+}
+
 if (preg_match('#^/api/admin/clients/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
     if ($method === 'GET') {
         AdminController::getClient($matches[1]);
+    } elseif ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
+        AdminController::updateClient($matches[1]);
+    } elseif ($method === 'DELETE') {
+        AdminController::archiveClient($matches[1]);
     }
 }
 
@@ -83,9 +98,117 @@ if ($path === '/api/admin/questionnaires') {
     }
 }
 
+if (preg_match('#^/api/admin/questionnaires/([a-zA-Z0-9_-]+)/archive$#', $path, $matches)) {
+    if ($method === 'POST' || $method === 'DELETE') {
+        AdminController::archiveQuestionnaire($matches[1]);
+    }
+}
+
 if (preg_match('#^/api/admin/questionnaires/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
     if ($method === 'GET') {
         AdminController::getQuestionnaireDetail($matches[1]);
+    } elseif ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
+        AdminController::updateQuestionnaire($matches[1]);
+    } elseif ($method === 'DELETE') {
+        AdminController::archiveQuestionnaire($matches[1]);
+    }
+}
+
+// --- ADMIN VERTICALS ---
+if ($path === '/api/admin/verticals') {
+    if ($method === 'GET') {
+        AdminController::getVerticals();
+    } elseif ($method === 'POST') {
+        AdminController::createVertical();
+    }
+}
+
+if (preg_match('#^/api/admin/verticals/([a-zA-Z0-9_-]+)/services$#', $path, $matches)) {
+    if ($method === 'GET') {
+        $_GET['vertical_id'] = $matches[1];
+        AdminController::getCatalogServices();
+    } elseif ($method === 'POST') {
+        AdminController::createCatalogServiceForVertical($matches[1]);
+    }
+}
+
+if (preg_match('#^/api/admin/verticals/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
+    if ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
+        AdminController::updateVertical($matches[1]);
+    } elseif ($method === 'DELETE') {
+        AdminController::archiveVertical($matches[1]);
+    }
+}
+
+// --- ADMIN CATALOG SERVICES / VERTICAL SERVICES ---
+if ($path === '/api/admin/catalog-services' || $path === '/api/admin/vertical-services') {
+    if ($method === 'GET') {
+        AdminController::getCatalogServices();
+    } elseif ($method === 'POST') {
+        AdminController::createCatalogService();
+    }
+}
+
+if (preg_match('#^/api/admin/(?:catalog-services|vertical-services)/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
+    if ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
+        AdminController::updateCatalogService($matches[1]);
+    } elseif ($method === 'DELETE') {
+        AdminController::archiveCatalogService($matches[1]);
+    }
+}
+
+// --- ADMIN STRATEGIC PLANS ---
+if ($path === '/api/admin/strategic-plans') {
+    if ($method === 'GET') {
+        AdminController::getStrategicPlans();
+    } elseif ($method === 'POST') {
+        AdminController::createStrategicPlan();
+    }
+}
+
+if (preg_match('#^/api/admin/strategic-plans/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
+    if ($method === 'GET') {
+        AdminController::getStrategicPlanDetail($matches[1]);
+    } elseif ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
+        AdminController::updateStrategicPlan($matches[1]);
+    } elseif ($method === 'DELETE') {
+        AdminController::archiveStrategicPlan($matches[1]);
+    }
+}
+
+// --- ADMIN VEGEN SERVICES (CATALOG) ---
+if ($path === '/api/admin/vegen-services') {
+    if ($method === 'GET') {
+        AdminController::getVegenServices();
+    } elseif ($method === 'POST') {
+        AdminController::createVegenService();
+    }
+}
+
+if (preg_match('#^/api/admin/vegen-services/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
+    if ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
+        AdminController::updateVegenService($matches[1]);
+    } elseif ($method === 'DELETE') {
+        AdminController::archiveVegenService($matches[1]);
+    }
+}
+
+// --- ADMIN QUOTES (PRESUPUESTOS) ---
+if ($path === '/api/admin/quotes') {
+    if ($method === 'GET') {
+        AdminController::getQuotes();
+    } elseif ($method === 'POST') {
+        AdminController::createQuote();
+    }
+}
+
+if (preg_match('#^/api/admin/quotes/([a-zA-Z0-9_-]+)$#', $path, $matches)) {
+    if ($method === 'GET') {
+        AdminController::getQuoteDetail($matches[1]);
+    } elseif ($method === 'PUT' || $method === 'PATCH' || $method === 'POST') {
+        AdminController::updateQuote($matches[1]);
+    } elseif ($method === 'DELETE') {
+        AdminController::archiveQuote($matches[1]);
     }
 }
 

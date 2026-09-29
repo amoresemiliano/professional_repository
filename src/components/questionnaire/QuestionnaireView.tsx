@@ -1,4 +1,4 @@
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useRef, useTransition } from 'react';
 import {
   ServiceItem,
   ServiceAnswerItem,
@@ -62,27 +62,120 @@ export function QuestionnaireView({
   const [isLoadedFromBackend, setIsLoadedFromBackend] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Refs de control estricto para evitar loops de renderizado y re-peticiones innecesarias
+  const lastSavedPayloadRef = useRef<string>('');
+  const isHydratingRef = useRef<boolean>(true);
+  const isSavingRef = useRef<boolean>(false);
+  const onAutoSaveStatusChangeRef = useRef(onAutoSaveStatusChange);
+
+  useEffect(() => {
+    onAutoSaveStatusChangeRef.current = onAutoSaveStatusChange;
+  }, [onAutoSaveStatusChange]);
+
+  // Helper centralizado para construir el objeto de carga útil hacia el backend
+  const buildPayloadObj = (
+    currentServices: ServiceItem[],
+    currentAnswers: Record<string, ServiceAnswerItem>,
+    currentAudiences: TargetAudienceItem[],
+    currentDifferentials: string[],
+    customDiffText: string,
+    pitch: string,
+    step: number
+  ) => {
+    const mappedServices = currentServices.map((s, idx) => {
+      const ans = currentAnswers[s.id] || {};
+      return {
+        id: s.id,
+        name: s.name,
+        is_custom: s.isCustom ? 1 : 0,
+        is_priority: s.isPriority ? 1 : 0,
+        display_order: idx + 1,
+        client_problem: ans.clientProblem || null,
+        solution_actions: ans.solutionActions || null,
+        expected_result: ans.expectedResult || null,
+        typical_duration: ans.typicalDuration || null,
+        pricing_model: ans.pricingModel || null,
+        price_min: ans.priceMin || null,
+        price_max: ans.priceMax || null,
+        currency: ans.currency || 'EUR',
+        price_notes: ans.priceNotes || null,
+        market_position: ans.marketPosition || null,
+        estimated_market_price: ans.estimatedMarketPrice || null,
+        market_notes: ans.marketNotes || null,
+        profitability_score: ans.profitabilityScore || null,
+        profitability_is_uncertain: ans.profitabilityIsUncertain ? 1 : 0,
+        operational_ease_score: ans.operationalEaseScore || null,
+        operational_issues: ans.operationalIssues || null,
+        operational_issues_other: ans.operationalIssuesOther || null,
+        operational_notes: ans.operationalNotes || null,
+        remote_capability: ans.remoteCapability || null,
+        remote_channels: ans.remoteChannels || null,
+        remote_channels_other: ans.remoteChannelsOther || null,
+        remote_notes: ans.remoteNotes || null,
+      };
+    });
+
+    const mappedAudiences = currentAudiences.map((a) => ({
+      audience_key: a.key,
+      custom_label: a.label,
+      priority: a.priority || 'medium',
+    }));
+
+    const mappedDifferentials = currentDifferentials.map((d) => ({
+      differential_key: d,
+      custom_label: d === 'others' ? (customDiffText || null) : null,
+    }));
+
+    return {
+      current_step: step,
+      final_pitch: pitch,
+      services: mappedServices,
+      target_audiences: mappedAudiences,
+      differentials: mappedDifferentials,
+    };
+  };
+
   // Servicios prioritarios activos
   const priorityServices = services.filter((s) => s.isPriority);
 
+  const onClientNameLoadedRef = useRef(onClientNameLoaded);
+  useEffect(() => {
+    onClientNameLoadedRef.current = onClientNameLoaded;
+  }, [onClientNameLoaded]);
+
   // 1. Cargar datos del cuestionario desde el backend si existe token
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setSubmitError('Acceso no válido: No se detectó un token de cuestionario en la URL. Por favor use el enlace único facilidado por su consultor (ej: /q/TOKEN).');
+      return;
+    }
 
     let isMounted = true;
     (async () => {
       try {
         const loaded = await questionnaireService.load(token);
-        if (!isMounted || !loaded) return;
+        if (!isMounted) return;
 
-        if (loaded.client_name) {
-          onClientNameLoaded?.(loaded.client_name);
+        if (!loaded) {
+          setSubmitError('No fue posible cargar el cuestionario desde el servidor. El enlace puede ser inválido o haber expirado.');
+          return;
         }
 
-        if (Array.isArray(loaded.services) && loaded.services.length > 0) {
-          const loadedServices: ServiceItem[] = [];
-          const loadedAnswers: Record<string, ServiceAnswerItem> = {};
+        setSubmitError(null);
 
+        if (loaded.client_name) {
+          onClientNameLoadedRef.current?.(loaded.client_name);
+        }
+
+        let loadedServices: ServiceItem[] = [];
+        let loadedAnswers: Record<string, ServiceAnswerItem> = {};
+        let loadedAudiences: TargetAudienceItem[] = [];
+        let loadedDiffs: string[] = [];
+        let loadedCustomDiffText = '';
+        let loadedPitch = loaded.final_pitch || '';
+        let loadedStep = loaded.current_step && loaded.current_step >= 1 && loaded.current_step <= 11 ? loaded.current_step : 1;
+
+        if (Array.isArray(loaded.services) && loaded.services.length > 0) {
           loaded.services.forEach((s: any) => {
             loadedServices.push({
               id: s.id,
@@ -121,112 +214,114 @@ export function QuestionnaireView({
 
           setServices(loadedServices);
           setAnswers(loadedAnswers);
+        } else {
+          loadedServices = services;
         }
 
         if (Array.isArray(loaded.target_audiences) && loaded.target_audiences.length > 0) {
-          setAudiences(loaded.target_audiences.map((a: any) => ({
+          loadedAudiences = loaded.target_audiences.map((a: any) => ({
             key: a.audience_key,
             label: a.custom_label || a.audience_key,
             priority: a.priority || 'medium',
-          })));
+          }));
+          setAudiences(loadedAudiences);
         }
 
         if (Array.isArray(loaded.differentials) && loaded.differentials.length > 0) {
-          setDifferentials(loaded.differentials.map((d: any) => d.differential_key));
+          loadedDiffs = loaded.differentials.map((d: any) => d.differential_key);
+          setDifferentials(loadedDiffs);
           const otherDiff = loaded.differentials.find((d: any) => d.differential_key === 'others');
           if (otherDiff && otherDiff.custom_label) {
-            setCustomDifferentialText(otherDiff.custom_label);
+            loadedCustomDiffText = otherDiff.custom_label;
+            setCustomDifferentialText(loadedCustomDiffText);
           }
         }
 
         if (loaded.final_pitch) {
-          setFinalPitch(loaded.final_pitch);
+          setFinalPitch(loadedPitch);
         }
 
-        if (loaded.current_step && loaded.current_step >= 1 && loaded.current_step <= 11) {
-          setCurrentStep(loaded.current_step);
+        if (loadedStep) {
+          setCurrentStep(loadedStep);
         }
 
         if (loaded.status === 'COMPLETED') {
           setIsSubmitted(true);
         }
 
+        // Registrar la carga útil inicial para evitar PUT inmediato de hidratación
+        const initialPayload = buildPayloadObj(
+          loadedServices,
+          loadedAnswers,
+          loadedAudiences,
+          loadedDiffs,
+          loadedCustomDiffText,
+          loadedPitch,
+          loadedStep
+        );
+        lastSavedPayloadRef.current = JSON.stringify(initialPayload);
+        isHydratingRef.current = false;
         setIsLoadedFromBackend(true);
       } catch (err) {
-        console.error('Error cargando cuestionario remoto:', err);
+        if (isMounted) {
+          setSubmitError('Error de red al cargar el cuestionario desde el servidor.');
+        }
       }
     })();
 
     return () => {
       isMounted = false;
     };
-  }, [token, onClientNameLoaded]);
+  }, [token]);
 
-  // 2. Autosave incremental real contra backend
+  // 2. Autosave incremental real contra backend (con Debounce + Hydration & Change Guard + Concurrency Lock)
   useEffect(() => {
-    onAutoSaveStatusChange?.('saving');
+    if (!token || isHydratingRef.current || !isLoadedFromBackend || isSubmitted) {
+      return;
+    }
+
+    const currentPayloadObj = buildPayloadObj(
+      services,
+      answers,
+      audiences,
+      differentials,
+      customDifferentialText,
+      finalPitch,
+      currentStep
+    );
+    const currentPayloadStr = JSON.stringify(currentPayloadObj);
+
+    // HYDRATION & CHANGE GUARD: No disparar PUT si el payload no ha sufrido modificaciones reales
+    if (currentPayloadStr === lastSavedPayloadRef.current) {
+      return;
+    }
+
     const timer = setTimeout(async () => {
-      if (token) {
-        // Mapear servicios y respuestas para backend
-        const mappedServices = services.map((s, idx) => {
-          const ans = answers[s.id] || {};
-          return {
-            id: s.id,
-            name: s.name,
-            is_custom: s.isCustom ? 1 : 0,
-            is_priority: s.isPriority ? 1 : 0,
-            display_order: idx + 1,
-            client_problem: ans.clientProblem || null,
-            solution_actions: ans.solutionActions || null,
-            expected_result: ans.expectedResult || null,
-            typical_duration: ans.typicalDuration || null,
-            pricing_model: ans.pricingModel || null,
-            price_min: ans.priceMin || null,
-            price_max: ans.priceMax || null,
-            currency: ans.currency || 'EUR',
-            price_notes: ans.priceNotes || null,
-            market_position: ans.marketPosition || null,
-            estimated_market_price: ans.estimatedMarketPrice || null,
-            market_notes: ans.marketNotes || null,
-            profitability_score: ans.profitabilityScore || null,
-            profitability_is_uncertain: ans.profitabilityIsUncertain ? 1 : 0,
-            operational_ease_score: ans.operationalEaseScore || null,
-            operational_issues: ans.operationalIssues || null,
-            operational_issues_other: ans.operationalIssuesOther || null,
-            operational_notes: ans.operationalNotes || null,
-            remote_capability: ans.remoteCapability || null,
-            remote_channels: ans.remoteChannels || null,
-            remote_channels_other: ans.remoteChannelsOther || null,
-            remote_notes: ans.remoteNotes || null,
-          };
-        });
+      if (isSavingRef.current) return;
+      isSavingRef.current = true;
+      onAutoSaveStatusChangeRef.current?.('saving');
 
-        const mappedAudiences = audiences.map(a => ({
-          audience_key: a.key,
-          custom_label: a.label,
-          priority: a.priority || 'medium',
-        }));
+      try {
+        const saved = await questionnaireService.save(token, currentPayloadObj);
 
-        const mappedDifferentials = differentials.map(d => ({
-          differential_key: d,
-          custom_label: d === 'others' ? (customDifferentialText || null) : null,
-        }));
-
-        await questionnaireService.save(token, {
-          current_step: currentStep,
-          final_pitch: finalPitch,
-          services: mappedServices,
-          target_audiences: mappedAudiences,
-          differentials: mappedDifferentials,
-        });
-      } else {
-        await questionnaireService.autoSaveAnswers(answers);
+        if (saved) {
+          lastSavedPayloadRef.current = currentPayloadStr;
+          setSubmitError(null);
+          onAutoSaveStatusChangeRef.current?.('saved');
+        } else {
+          setSubmitError('Fallo al guardar cambios en el servidor. Verifique su conexión.');
+          onAutoSaveStatusChangeRef.current?.('idle');
+        }
+      } catch {
+        setSubmitError('Error de red durante el guardado automático.');
+        onAutoSaveStatusChangeRef.current?.('idle');
+      } finally {
+        isSavingRef.current = false;
       }
-      onAutoSaveStatusChange?.('saved');
-    }, 600);
+    }, 800);
 
     return () => clearTimeout(timer);
-  }, [services, answers, audiences, differentials, customDifferentialText, finalPitch, currentStep, token, onAutoSaveStatusChange]);
+  }, [services, answers, audiences, differentials, customDifferentialText, finalPitch, currentStep, token, isLoadedFromBackend, isSubmitted]);
 
   // Manejadores para Paso 1 (Oferta)
   const handleToggleServiceSelection = (serviceName: string) => {
@@ -311,77 +406,67 @@ export function QuestionnaireView({
     setSubmitError(null);
 
     try {
-      if (token) {
-        const mappedServices = services.map((s, idx) => {
-          const ans = answers[s.id] || {};
-          return {
-            id: s.id,
-            name: s.name,
-            is_custom: s.isCustom ? 1 : 0,
-            is_priority: s.isPriority ? 1 : 0,
-            display_order: idx + 1,
-            client_problem: ans.clientProblem || null,
-            solution_actions: ans.solutionActions || null,
-            expected_result: ans.expectedResult || null,
-            typical_duration: ans.typicalDuration || null,
-            pricing_model: ans.pricingModel || null,
-            price_min: ans.priceMin || null,
-            price_max: ans.priceMax || null,
-            currency: ans.currency || 'EUR',
-            price_notes: ans.priceNotes || null,
-            market_position: ans.marketPosition || null,
-            estimated_market_price: ans.estimatedMarketPrice || null,
-            market_notes: ans.marketNotes || null,
-            profitability_score: ans.profitabilityScore || null,
-            profitability_is_uncertain: ans.profitabilityIsUncertain ? 1 : 0,
-            operational_ease_score: ans.operationalEaseScore || null,
-            operational_issues: ans.operationalIssues || null,
-            operational_issues_other: ans.operationalIssuesOther || null,
-            operational_notes: ans.operationalNotes || null,
-            remote_capability: ans.remoteCapability || null,
-            remote_channels: ans.remoteChannels || null,
-            remote_channels_other: ans.remoteChannelsOther || null,
-            remote_notes: ans.remoteNotes || null,
-          };
-        });
+      if (!token || !isLoadedFromBackend) {
+        setSubmitError('Imposible enviar: El cuestionario no está vinculado con el servidor. Acceda mediante su enlace personal.');
+        return;
+      }
 
-        const mappedAudiences = audiences.map(a => ({
-          audience_key: a.key,
-          custom_label: a.label,
-          priority: a.priority || 'medium',
-        }));
+      const mappedServices = services.map((s, idx) => {
+        const ans = answers[s.id] || {};
+        return {
+          id: s.id,
+          name: s.name,
+          is_custom: s.isCustom ? 1 : 0,
+          is_priority: s.isPriority ? 1 : 0,
+          display_order: idx + 1,
+          client_problem: ans.clientProblem || null,
+          solution_actions: ans.solutionActions || null,
+          expected_result: ans.expectedResult || null,
+          typical_duration: ans.typicalDuration || null,
+          pricing_model: ans.pricingModel || null,
+          price_min: ans.priceMin || null,
+          price_max: ans.priceMax || null,
+          currency: ans.currency || 'EUR',
+          price_notes: ans.priceNotes || null,
+          market_position: ans.marketPosition || null,
+          estimated_market_price: ans.estimatedMarketPrice || null,
+          market_notes: ans.marketNotes || null,
+          profitability_score: ans.profitabilityScore || null,
+          profitability_is_uncertain: ans.profitabilityIsUncertain ? 1 : 0,
+          operational_ease_score: ans.operationalEaseScore || null,
+          operational_issues: ans.operationalIssues || null,
+          operational_issues_other: ans.operationalIssuesOther || null,
+          operational_notes: ans.operationalNotes || null,
+          remote_capability: ans.remoteCapability || null,
+          remote_channels: ans.remoteChannels || null,
+          remote_channels_other: ans.remoteChannelsOther || null,
+          remote_notes: ans.remoteNotes || null,
+        };
+      });
 
-        const mappedDifferentials = differentials.map(d => ({
-          differential_key: d,
-          custom_label: d === 'others' ? (customDifferentialText || null) : null,
-        }));
+      const mappedAudiences = audiences.map(a => ({
+        audience_key: a.key,
+        custom_label: a.label,
+        priority: a.priority || 'medium',
+      }));
 
-        const res = await questionnaireService.submit(token, {
-          final_pitch: finalPitch,
-          services: mappedServices,
-          target_audiences: mappedAudiences,
-          differentials: mappedDifferentials,
-        });
+      const mappedDifferentials = differentials.map(d => ({
+        differential_key: d,
+        custom_label: d === 'others' ? (customDifferentialText || null) : null,
+      }));
 
-        if (res.success) {
-          setIsSubmitted(true);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-          setSubmitError(res.error || 'No se pudo completar el envío del diagnóstico.');
-        }
-      } else {
-        await questionnaireService.submitQuestionnaire({
-          services,
-          answers,
-          targetAudiences: audiences,
-          customAudiences: [],
-          differentials,
-          customDifferentialText,
-          valueProposition: finalPitch,
-          isCompleted: true,
-        });
+      const res = await questionnaireService.submit(token, {
+        final_pitch: finalPitch,
+        services: mappedServices,
+        target_audiences: mappedAudiences,
+        differentials: mappedDifferentials,
+      });
+
+      if (res.success) {
         setIsSubmitted(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        setSubmitError(res.error || 'No se pudo completar el envío del diagnóstico.');
       }
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Error inesperado al enviar el diagnóstico.');
@@ -456,7 +541,7 @@ export function QuestionnaireView({
 
         {currentStep === 6 && (
           <Step6Rentabilidad
-            services={services}
+            priorityServices={priorityServices}
             answers={answers}
             onUpdateAnswer={handleUpdateAnswer}
           />
@@ -498,7 +583,7 @@ export function QuestionnaireView({
 
         {currentStep === 11 && (
           <Step11Resumen
-            services={services}
+            priorityServices={priorityServices}
             audiences={audiences}
             differentials={differentials}
             customDifferentialText={customDifferentialText}

@@ -4,28 +4,28 @@ import { Badge } from '../../common/Badge';
 import { ScaleSelector } from '../../common/ScaleSelector';
 
 interface Step6RentabilidadProps {
-  services: ServiceItem[];
+  priorityServices: ServiceItem[];
   answers: Record<string, ServiceAnswerItem>;
   onUpdateAnswer: (serviceId: string, updates: Partial<ServiceAnswerItem>) => void;
 }
 
 export function Step6Rentabilidad({
-  services,
+  priorityServices,
   answers,
   onUpdateAnswer,
 }: Step6RentabilidadProps) {
   return (
     <div>
       <header className="step-header">
-        <h1 className="step-title">Rentabilidad por servicio</h1>
+        <h1 className="step-title">Rentabilidad por servicio prioritario</h1>
         <p className="step-description">
           ¿Cómo considerás la relación entre los honorarios que genera cada servicio y las
-          horas/esfuerzo que requiere? Evaluamos todos los servicios que ofrecés.
+          horas/esfuerzo que requiere? Evaluamos exclusivamente los servicios prioritarios seleccionados.
         </p>
       </header>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-        {services.map((service) => {
+        {priorityServices.map((service) => {
           const ans: Partial<ServiceAnswerItem> = answers[service.id] || {};
           return (
             <Card key={service.id}>
@@ -41,7 +41,7 @@ export function Step6Rentabilidad({
                   <h2 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)' }}>
                     {service.name}
                   </h2>
-                  {service.isPriority && <Badge variant="priority">Prioritario</Badge>}
+                  <Badge variant="priority">Prioritario</Badge>
                 </div>
 
                 <ScaleSelector
@@ -66,6 +66,12 @@ export function Step6Rentabilidad({
             </Card>
           );
         })}
+
+        {priorityServices.length === 0 && (
+          <div style={{ textAlign: 'center', padding: 'var(--space-6)', color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-sm)' }}>
+            No se han seleccionado servicios prioritarios en el Paso 2.
+          </div>
+        )}
       </div>
     </div>
   );

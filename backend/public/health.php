@@ -58,6 +58,9 @@ if (!$dbOk) {
 
 // 2. Respuesta de salud limpia y segura
 Response::success([
-    'status'   => 'ok',
-    'database' => 'ok',
+    'status'      => 'ok',
+    'database'    => 'ok',
+    'db_name'     => Database::getCurrentDatabaseName(),
+    'environment' => \Vegen\Core\Config::get('environment', 'unknown'),
+    'config_path' => \Vegen\Core\Config::getLoadedPath(),
 ], 200);

@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../common/Button';
 import { FormGroup, FormLabel, Input, Select } from '../common/FormControls';
+import { BusinessVertical } from '../../types';
+import { adminService } from '../../services/adminService';
 
 interface NewClientModalProps {
   isOpen: boolean;
@@ -10,6 +12,7 @@ interface NewClientModalProps {
     sector: string;
     contactName: string;
     contactEmail: string;
+    verticalId?: string | null;
   }) => void;
 }
 
@@ -22,6 +25,19 @@ export function NewClientModal({
   const [sector, setSector] = useState('Extranjería y Visados');
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [verticalId, setVerticalId] = useState<string>('');
+  const [verticals, setVerticals] = useState<BusinessVertical[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      adminService.getVerticalsAsync().then((list) => {
+        setVerticals(list);
+        if (list.length > 0 && !verticalId) {
+          setVerticalId(list[0].id);
+        }
+      }).catch(() => {});
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -34,6 +50,7 @@ export function NewClientModal({
       sector,
       contactName: contactName.trim(),
       contactEmail: contactEmail.trim(),
+      verticalId: verticalId || null,
     });
 
     setName('');
@@ -77,18 +94,31 @@ export function NewClientModal({
           Crear nuevo cliente y generar enlace
         </h2>
         <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-4)' }}>
-          Se creará el registro del profesional y se generará un enlace tokenizado privado.
+          Se creará el registro del profesional y se asignará el pool de servicios según su vertical.
         </p>
 
         <form onSubmit={handleSubmit}>
           <FormGroup>
-            <FormLabel htmlFor="new-client-name">Nombre del Despacho o Profesional</FormLabel>
+            <FormLabel htmlFor="new-client-name">Nombre del Despacho o Profesional *</FormLabel>
             <Input
               id="new-client-name"
               placeholder="Ej: Sánchez Abogados España"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <FormLabel htmlFor="new-client-vertical">Vertical de Negocio / Pool de Servicios</FormLabel>
+            <Select
+              id="new-client-vertical"
+              value={verticalId}
+              onChange={(e) => setVerticalId(e.target.value)}
+              options={verticals.map((v) => ({
+                value: v.id,
+                label: v.name,
+              }))}
             />
           </FormGroup>
 

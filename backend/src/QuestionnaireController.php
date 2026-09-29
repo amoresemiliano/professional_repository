@@ -37,19 +37,26 @@ class QuestionnaireController
                 q.current_step,
                 q.final_pitch,
                 q.submitted_at,
+                q.is_protected,
+                q.deleted_at AS q_deleted_at,
                 c.name AS client_name,
-                c.professional_sector AS client_sector
+                c.professional_sector AS client_sector,
+                c.deleted_at AS client_deleted_at
             FROM questionnaire_tokens qt
             JOIN questionnaires q ON qt.questionnaire_id = q.id
             JOIN clients c ON q.client_id = c.id
-            WHERE qt.token_hash = :hash
+            WHERE qt.token_hash = :hash OR qt.id = :token OR q.id = :token
             LIMIT 1
         ");
-        $stmt->execute([':hash' => $tokenHash]);
+        $stmt->execute([':hash' => $tokenHash, ':token' => $token]);
         $record = $stmt->fetch();
 
         if (!$record) {
             Response::error('TOKEN_NOT_FOUND', 'El cuestionario solicitado no existe o el enlace es incorrecto.', 404);
+        }
+
+        if (!empty($record['q_deleted_at']) || !empty($record['client_deleted_at'])) {
+            Response::error('TOKEN_REVOKED', 'Este cuestionario ha sido archivado y su enlace ya no está disponible.', 410);
         }
 
         if ((int)$record['is_revoked'] === 1) {
