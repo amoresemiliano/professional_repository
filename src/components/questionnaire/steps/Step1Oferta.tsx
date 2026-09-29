@@ -35,56 +35,45 @@ export function Step1Oferta({
   return (
     <div>
       <header className="step-header">
-        <h1 className="step-title">¿Cuáles son tus principales servicios?</h1>
+        <h1 className="step-title">¿Qué servicios brindas?</h1>
         <p className="step-description">
-          Selecciona todos los servicios que ofreces actualmente. Puedes añadir personalizados con el botón inferior.
+          Selecciona los servicios que brindas actualmente. Si alguno no aparece en la lista, puedes añadirlo.
         </p>
       </header>
 
       <div className="grid-1" style={{ marginBottom: 'var(--space-4)' }}>
-        {DEFAULT_SERVICES.map((serviceName) => {
-          const isSelected = services.some((s) => s.name === serviceName);
-          return (
-            <ChoiceCard
-              key={serviceName}
-              title={serviceName}
-              selected={isSelected}
-              type="checkbox"
-              onToggle={() => onToggleService(serviceName)}
-            />
-          );
-        })}
-
-        {/* Servicios Personalizados */}
-        {services
-          .filter((s) => s.isCustom)
-          .map((custom) => (
-            <ChoiceCard
-              key={custom.id}
-              title={custom.name}
-              selected={true}
-              badge={<Badge variant="neutral">Personalizado</Badge>}
-              type="checkbox"
-              onToggle={() => {}}
-              actionButton={
+        {services.map((service) => (
+          <ChoiceCard
+            key={service.id}
+            title={service.name}
+            selected={true}
+            type="checkbox"
+            badge={service.isCustom ? <Badge variant="neutral">Personalizado</Badge> : undefined}
+            onToggle={() => onToggleService(service.name)}
+            actionButton={
+              service.isCustom ? (
                 <button
                   type="button"
                   className="btn btn-sm btn-danger-ghost"
-                  onClick={() => onRemoveCustomService(custom.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveCustomService(service.id);
+                  }}
                   title="Eliminar servicio personalizado"
-                  aria-label={`Eliminar ${custom.name}`}
+                  aria-label={`Eliminar ${service.name}`}
                 >
                   <IconTrash size={14} />
                 </button>
-              }
-            />
-          ))}
+              ) : undefined
+            }
+          />
+        ))}
       </div>
 
       {/* Añadir Servicio Personalizado */}
       {!showAddCustom ? (
         <Button variant="secondary" onClick={() => setShowAddCustom(true)}>
-          + Añadir
+          + Añadir otro servicio
         </Button>
       ) : (
         <Card>
