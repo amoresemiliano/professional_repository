@@ -153,6 +153,7 @@ export interface VegenService {
   id: string;
   organization_id?: string;
   name: string;
+  category?: string | null;
   description?: string | null;
   base_price: number;
   currency: string;

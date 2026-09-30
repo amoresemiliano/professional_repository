@@ -511,7 +511,7 @@ class AdminService {
     throw new Error(res.error?.message || 'Error al obtener catálogo de servicios Vegen');
   }
 
-  public async createVegenServiceAsync(data: { name: string; description?: string; base_price: number; currency?: string; is_active?: boolean }): Promise<VegenService> {
+  public async createVegenServiceAsync(data: { name: string; category?: string; description?: string; base_price: number; currency?: string; is_active?: boolean }): Promise<VegenService> {
     const res = await apiRequest<VegenService>('/admin/vegen-services', {
       method: 'POST',
       body: JSON.stringify(data),

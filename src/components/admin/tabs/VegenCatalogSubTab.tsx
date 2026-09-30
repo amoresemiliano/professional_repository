@@ -17,6 +17,7 @@ export function VegenCatalogSubTab() {
   const [editingService, setEditingService] = useState<VegenService | null>(null);
   const [form, setForm] = useState({
     name: '',
+    category: 'General',
     description: '',
     base_price: 0,
     is_active: true,
@@ -44,7 +45,7 @@ export function VegenCatalogSubTab() {
 
   const handleOpenNew = () => {
     setEditingService(null);
-    setForm({ name: '', description: '', base_price: 1000, is_active: true });
+    setForm({ name: '', category: 'General', description: '', base_price: 1000, is_active: true });
     setShowModal(true);
   };
 
@@ -52,6 +53,7 @@ export function VegenCatalogSubTab() {
     setEditingService(srv);
     setForm({
       name: srv.name,
+      category: srv.category || 'General',
       description: srv.description || '',
       base_price: Number(srv.base_price),
       is_active: Boolean(Number(srv.is_active)),
@@ -144,6 +146,7 @@ export function VegenCatalogSubTab() {
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--color-border)', backgroundColor: 'var(--color-surface-subtle)', textAlign: 'left' }}>
                   <th style={{ padding: 'var(--space-3) var(--space-4)' }}>Servicio</th>
+                  <th style={{ padding: 'var(--space-3) var(--space-4)' }}>Categoría</th>
                   <th style={{ padding: 'var(--space-3) var(--space-4)' }}>Descripción</th>
                   <th style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right' }}>Tarifa Base</th>
                   <th style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'center' }}>Estado</th>
@@ -155,6 +158,9 @@ export function VegenCatalogSubTab() {
                   <tr key={srv.id} style={{ borderBottom: '1px solid var(--color-border-subtle)' }}>
                     <td style={{ padding: 'var(--space-3) var(--space-4)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
                       {srv.name}
+                    </td>
+                    <td style={{ padding: 'var(--space-3) var(--space-4)', color: 'var(--color-text-secondary)' }}>
+                      <Badge variant="neutral">{srv.category || 'General'}</Badge>
                     </td>
                     <td style={{ padding: 'var(--space-3) var(--space-4)', color: 'var(--color-text-secondary)', maxWidth: '300px' }}>
                       {srv.description || '—'}
@@ -221,6 +227,18 @@ export function VegenCatalogSubTab() {
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     placeholder="Ej. Consultoría de IA"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label" htmlFor="vs-category">Categoría</label>
+                  <input
+                    id="vs-category"
+                    type="text"
+                    className="form-input"
+                    value={form.category}
+                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                    placeholder="Ej. Estrategia & Consultoría"
                   />
                 </div>
 
