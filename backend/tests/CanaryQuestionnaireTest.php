@@ -68,6 +68,12 @@ class CanaryQuestionnaireTest
         ");
         $stmtTok->execute([':id' => Token::generateUuid(), ':q_id' => $qId, ':tok_hash' => $tokHash]);
 
+        // Regression Test HY093: Validar que resolveToken funciona con raw public token sin error HY093
+        $refMethod = new ReflectionMethod(QuestionnaireController::class, 'resolveToken');
+        $refMethod->setAccessible(true);
+        $resolvedRecord = $refMethod->invoke(null, $rawTok);
+        $this->assert($resolvedRecord && $resolvedRecord['questionnaire_id'] === $qId, "Regression Test HY093: resolveToken resuelve token público raw sin error PDO");
+
         // Pool inicial de 5 servicios
         $poolServices = [
             'Servicio Alpha',
